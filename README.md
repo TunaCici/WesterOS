@@ -213,3 +213,6 @@ $ make run
 ## Explore
 
 TODO: Navigate the user to another README which is basically the documentation.
+
+[1]: https://pdos.csail.mit.edu/6.828/2012/xv6.html
+[2]: https://gameofthrones.fandom.com/wiki/Westeros
