@@ -192,6 +192,8 @@ The build ends with a message **Build complete. Enjoy life <3**. If you don't se
 
 WesterOS can ONLY be run using QEMU. I have no plans to make a fully-bootable image for real-world hardware. Originally my idea was to emulate a _Raspberrry Pi 4b_, but I realized it might not that be "beginner friendly" when testing and deubgging. So, QEMU it is!
 
+> Shameless plug time! If you want more about QEMU, visit my [QEMU_Starter](https://github.com/TunaCici/QEMU_Starter) GitHub thingy.
+
 **0. Make sure you have `qemu-system-aarch64` installed**
 ```bash
 $ apt install qemu-system qemu-utils # if using `apt`
