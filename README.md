@@ -3,7 +3,7 @@
 > **Warning!** Almost _nothing_ is complete yet. Everything here is experimental AND
 > in VERY ACTIVE development. Proceed with caution.
 
-## **Motive**
+## **Motivation**
 
 Computers are _weird_. Weird in the sense that they feel magical if you don't 
 know how they work. If, and when, you start learning how it works, that magical
