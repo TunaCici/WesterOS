@@ -115,13 +115,97 @@ TODO: Tell everyone that this part is MAINLY referenced from xv6 and why so.
 
 TODO: Some fun stuff. What awaits someone one they launch the OS?
 
-## Build
+## Installation
 
-TODO: How to build everything. ARM toolchain, make system and host requirements.
+To build & run the operating system you need three main things: `ARM GNU Toolchain`, `QEMU` and a little bit of Patience™.
+
+It is possible to build everything on your favorite operating system. `ARM GNU Toolchain` is available on both **Windows**, **macOS** and **GNU/Linux**. However, I have NOT tested **Windows** yet. So, you are alone in that space. Sorry :(
+
+The below steps are for **GNU/Linux (Aarch64)** hosts.
+
+**0. Make sure you have `git` and `make`**
+```bash
+$ apt install git make # if using `apt`
+$ pacman -S git make # if using `pacman`
+```
+
+**1. Clone this repository**
+```bash
+$ git clone https://github.com/TunaCici/WesterOS.git
+```
+
+**2. Download the latest `ARM GNU Toolchain`**
+
+Navigate to [ARM GNU Toolchain Downloads](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) web page.
+
+Choose the appropriate **Aarch64 bare-matel target** to download. The version _should not_ matter, so choose the latest one. However, which hosted toolchain you download DOES matter. Choose the one that is created for your OWN operating system.
+
+For example, if your OS is **GNU/Linux (x86_64)** then you download:
+```text
+https://developer.arm.com/-/media/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz
+```
+
+```bash
+$ cd WesterOS/Toolchain
+$ wget https://developer.arm.com/-/media/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-aarch64-aarch64-none-elf.tar.xz
+```
+
+> It is your responsibility to verify the "integrity" and "signature" of the downloaded file. Use the **SHA256** keys provided in the downloads page.
+
+**3. Extract the downloaded `ARM GNU Toolchain`**
+
+Make sure to extract it while in `Westeros/Toolchain`.
+
+```bash
+$ tar -xvf arm-gnu-toolchain-12.2.rel1-aarch64-aarch64-none-elf.tar.xz
+```
+
+**4. Modify the `TOOLCHAIN_PATH` in the `Makefile`**
+
+The `TOOLCHAIN_PATH` should point to your newly downloaded and extracted `ARM GNU Toolchain`. Since your host OS and toolchain version might be different than mine, you MUST edit the PATH variable.
+
+If not set correctly, the `make` process WILL fail with an error message like:
+```text
+make[1]: Toolchain/arm-gnu-toolchain-12.2.rel1-darwin-arm64-aarch64-none-elf/bin/aarch64-none-elf-as: No such file or directory
+```
+
+So, make sure to edit the `TOOLCHAIN_PATH`.
+```bash
+# Open the main Makefile /w your favorite text editor
+$ vim Makefile
+
+# And change the `TOOLCHAIN_PATH` accordingly. For example..
+> TOOLCHAIN_PATH=Toolchain/arm-gnu-toolchain-12.2.rel1-darwin-arm64-aarch64-none-elf
+
+# Save & exit
+```
+
+**5. Build using `make`**
+
+```bash
+$ make all
+```
+
+The build ends with a message **Build complete. Enjoy life <3**. If you don't see it, contact me. I'll try the fix the issue >.<
 
 ## Run/Emulate
 
-TODO: QEMU emulation. Run the OS and see what's in there.
+WesterOS can ONLY be run using QEMU. I have no plans to make a fully-bootable image for real-world hardware. Originally my idea was to emulate a _Raspberrry Pi 4b_, but I realized it might not that be "beginner friendly" when testing and deubgging. So, QEMU it is!
+
+**0. Make sure you have `qemu-system-aarch64` installed**
+```bash
+$ apt install qemu-system qemu-utils # if using `apt`
+$ pacman -S qemu-full # if using `pacman`
+```
+
+**1. Launch WesterOS**
+```bash
+$ make run
+```
+
+> As of 9 July 2023, the WesterOS is straight-up empty! So, you can't do anything except to see some very basic kernel messages on the terminal :/
+> 
+> Then again, WesterOS is a _hobbyist operating system_ and a _learning process_. You should really try to explore it's source code. I'm sure you will have more fun there.
 
 ## Explore
 
