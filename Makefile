@@ -37,7 +37,7 @@ QEMU_SCRIPT=Emulation/launch-qemu.sh
 # Object files
 OBJS = \
 	Kernel/Start.o \
-	kernel/Main.o \
+	Kernel/Main.o \
 
 KERN_OBJS = Entry.o ${OBJS}
 LDSCRIPT = Kernel/kernel.ld
