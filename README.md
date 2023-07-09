@@ -21,9 +21,10 @@ Basically, I wanted to learn more about "computers". Working on the relatively
 high-level software is pretty fun, but I have a bad habit of ending up looking
 at low-level internels and workings of stuff.
 
-> "Oh, so my calls to `malloc()` or `new` ends up calling the syscall `mmap()`?
+> "Oh, so my calls to `malloc()` and `new` ends up calling the syscall `mmap()`?
 > Let's check it's implementation.. Oh, what's `VMA`? What's a `MMU`? What's a
-> `TLB`?? What's a `TCR` and a `MAIR`??? Why am I here.. Just to suffer..?"
+> `TLB`?? What's the `TCR` and the `MAIR`??? How did I get here? Why am I here..
+> Just to suffer..? :("
 
 There was these layers of **abstraction** that I had no idea of! I should've
 stopped there, but no. Instead, I said: "Okay. I really like the _call-of-the-void_
