@@ -1,0 +1,26 @@
+#
+# The cross toolchain used to develop WesterOS
+#
+
+# ~~ TOOLCHAIN ~~
+
+# Name: Official ARM GNU Toolchain
+# Version (as of Jun. 2023): 12.2.Rel1
+# URL: https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
+
+# ~~ HOW-TO ~~
+
+# 1. Download the latest ARM GNU Toolchain for the "aarch64-none-elf" target
+Depending on your host OS choose either:
+        a. Windows <-> mingw-w64-i686
+        b. GNU/Linux <-> x86_64 OR AArch64
+        c. macOS <-> x86_64 OR Apple Silicon
+
+# 2. Verify the "integrity" and "signature" of the downloaded files
+Assuming you've also downloaded the necessary files (*.asc, *.sha256asc)
+
+# 3. Extract/Install the toolchain under this directory (Tools/)
+The final PATH should look like this:
+        <WesterOS_DIR>/Toolchain/arm-gnu-toolchain-<VERSION>-<HOST>-aarch64-none-elf/
+
+# 4. Enjoy life

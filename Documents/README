@@ -4,3 +4,16 @@
 
 Raspberry_Pi_BCM2711_ARM_Peripherals.pdf
 https://datasheets.raspberrypi.com/bcm2711/bcm2711-peripherals.pdf
+
+DEN0024A_ARMv8_PG.pdf
+https://developer.arm.com/documentation/den0024/a/
+
+QEMU_Documentation_8_0_0.pdf
+https://readthedocs.org/projects/qemu/downloads/pdf/latest/
+
+#
+# Helpful Writings <-> Source
+#
+
+ARM Assembly Basics
+https://azeria-labs.com/writing-arm-assembly-part-1/

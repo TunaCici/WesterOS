@@ -1,6 +1,13 @@
 # Build files
-bin/*
-build/*
+Bin/*
+Build/*
+!Build/.gitkeep
+!Build/boot/
+
+# Toolchain(s)
+Toolchain/*
+!Toolchain/.gitkeep
+!Toolchain/README
 
 # Cache files
 .cache/*
@@ -9,7 +16,9 @@ build/*
 .DS_Store
 
 # QEMU
-.qcow2
+*.qcow2
+*.dtb
+edk2-*
 
 # Xcode user settings
 xcuserdata/
@@ -18,13 +27,18 @@ xcuserdata/
 *.xcscmblueprint
 *.xccheckout
 
+# VSCode
+.vscode
+
+# CLion
+.idea
+
 # CMake
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Testing
-Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
@@ -47,8 +61,6 @@ _deps
 
 # Compiled Dynamic libraries
 *.so
-*.dylib
-*.dll
 
 # Compiled Static libraries
 *.lai
@@ -59,4 +71,3 @@ _deps
 # Executables
 *.exe
 *.out
-*.app

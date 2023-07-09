@@ -11,7 +11,7 @@ if [[ -x "$(command -v ${QEMU_BIN})" ]]; then
     ${QEMU_BIN} --version
 else
     echo "[!] ${QEMU_BIN} not found on the system! Make sure it is installed"
-    exit -1
+    exit 1
 fi
 
 # END Host
@@ -28,23 +28,28 @@ MACHINE="-machine virt"
 
 # 2. CPU override
 CPU="-cpu cortex-a72"
-SMP=""
+SMP="-smp 2"
 ACCELERATOR=""
 
 # 3. Memory override
-MEMORY="-m 8G"
+MEMORY="-m 2G"
 
 # 4. BIOS/UEFI settings
+EFI_FLASH_PATH=""
+EFI_VARS_PATH=""
+
+EFI_FLASH_DRV=""
+EFI_VARS_DRV=""
 
 # 5. Device selection
 # 5.1. Input
-INPUT_DEV="-device usb-ehci -device usb-kbd"
+INPUT_DEV=""
 
 # 5.2. Network
 NETWORK_DEV=""
 
 # 5.3 Storage
-STORAGE_DEV="-device sdhci-pci -device sd-card,drive=sdcard0"
+STORAGE_DEV=""
 
 # 5.4. Display
 DISPLAY_DEV="-device ramfb"
@@ -56,9 +61,9 @@ SOUND_DEV=""
 MISC_DEV=""
 
 # 6. Drive settings (a.k.a disk images)
-DISK_PATH="./disk0.qcow2"
+DISK_PATH=""
 
-MAIN_DRV="-drive id=sdcard0,if=none,format=qcow2,file=${DISK_PATH}"
+MAIN_DRV=""
 
 # END Guest
 
