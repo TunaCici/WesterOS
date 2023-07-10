@@ -28,7 +28,7 @@ OBJDUMP=${TOOLCHAIN_PATH}/bin/aarch64-none-elf-objdump
 
 # Flags
 INCLUDES=-I Kernel/Include
-CFLAGS=${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99
+CFLAGS=${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -O2
 LDFLAGS=
 
 # QEMU
@@ -59,12 +59,12 @@ Entry.o: ${ENTRY}
 
 ${OBJS}: %.o: %.c
 	@echo "CC $<"
-	@${CC} ${CFLAGS} -c $< -o ${BUILD_DIR}/$@
+	@${CC} ${CFLAGS} -c $< -o ${BUILD_DIR}/${notdir $@}
 	@echo "CC $< ${GREEN}ok${NC}"
 
 kernel: ${KERN_OBJS}
 	@echo "LINK ${KERN_OBJS} -T ${LDSCRIPT}"
-	@${LD} ${LDFLAGS} -T ${LDSCRIPT} -o ${BUILD_DIR}/kernel.elf ${addprefix ${BUILD_DIR}/,${KERN_OBJS}}
+	@${LD} ${LDFLAGS} -T ${LDSCRIPT} -o ${BUILD_DIR}/kernel.elf ${addprefix ${BUILD_DIR}/, $(notdir ${KERN_OBJS})}
 	@echo "LINK ${KERN_OBJS} ${GREEN}ok${NC}"
 
 debug:
@@ -84,11 +84,8 @@ all:
 	@echo "${shell ${LD} --version | head -n 1}"
 	@echo "${shell ${AR} --version | head -n 1}"
 
-	@mkdir -p ${BUILD_DIR}/Kernel
-
 	@echo "------------------------ ${BLUE} BUILD ${NC} ------------------------"
-
-	mkdir -p ${BUILD_DIR}/Kernel/
+	@mkdir -p ${BUILD_DIR}
 	@${MAKE} kernel
 
 	@echo "------------------------ ${GREEN} DEBUG ${NC} ------------------------"

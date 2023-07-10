@@ -16,18 +16,18 @@ SECTIONS
         
         .start_sec : {
                 Build/Entry.o(.text)
-                Build/Kernel/Start.o(.text .text.*)
+                Build/Start.o(.text .text.*)
 
                 Build/Entry.o(.rodata .rodata.*)
-                Build/Kernel/Start.o(.rodata .rodata.*)
+                Build/Start.o(.rodata .rodata.*)
 
                 Build/Entry.o(.data .data.*)
-                Build/Kernel/Start.o(.data .data.*)
+                Build/Start.o(.data .data.*)
 
                 PROVIDE(edata_entry = .);
 
                 Build/Entry.o(.bss .bss.* COMMON)
-                Build/Kernel/Start.o(.bss .bss.* COMMON)
+                Build/Start.o(.bss .bss.* COMMON)
 
                 /*define a stack for the entry*/
                 . = ALIGN(0x1000);
