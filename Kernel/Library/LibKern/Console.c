@@ -1,111 +1,213 @@
 /*
-* Console printing/logging functionalities for the Kernel
-*
-* Original src: mit-pdos/xv6-public
-* Modified by: Tuna CICI
-*/
+ * Console printing/logging functionalities for the Kernel
+ *
+ * Author: Tuna CICI
+ */
 
 #include <stdint.h>
 #include <stdarg.h>
 
-#include <Console.h>
-#include <MemoryLayout.h>
+#include "MemoryLayout.h"
+#include "LibKern/Console.h"
+#include "LibKern/Time.h"
+
+static const char digits[] = "0123456789ABCDEF";
 
 static void uart_putc(const char c)
 {
-	volatile uint32_t *uart = (uint32_t*) PL011_BASE;
-        *uart = c;
+        volatile uint32_t *uart = (uint32_t*) PL011_BASE;
+        *uart = c; /* TODO: This feels wrong... */
 }
 
-void kprint_int(uint64_t xx, uint16_t base, uint16_t sign)
+
+/* Timestamp */
+/* Ex. [  15.123000] */
+/* TODO: What an awful code this turned out to be.. FML! */
+static void timestamp(void)
 {
-	const static char digits[] = "0123456789ABCDEF";
-	char buffer[64] = {0};
-	uint64_t x = 0;
+        uint64_t uptime = 0;
+        uint32_t micro = 0;
+        uint16_t sec = 0;
 
-	if (sign && (sign = xx < 0)) {
-		x = -xx;
-	} else {
-		x = xx;
-	}
+        /* Formatting */
+        static const uint8_t precision_sec = 4u;
+        static const uint8_t precision_micro = 6u;
 
-	int i = 0;
-	
-	do {
-		buffer[i++] = digits[x % base];
-	} while((x /= base) != 0);
+        uint8_t idx = 0;
+        char buffer[15] = {0};
 
-	if (sign) {
-		buffer[i++] = '-';
-	}
+        uptime = arm64_uptime(); /* This is nanoseconds */
+        micro = uptime / NANO_PER_MICRO;
+        sec = micro / MICRO_PER_SEC;
 
-	while (--i >= 0) {
-		uart_putc(buffer[i]);
-	}
-	
+        buffer[idx++] = '\0';
+        buffer[idx++] = ' ';
+        buffer[idx++] = ']';
+
+        for (uint8_t i = 0; i < precision_micro; i++) {
+                if (micro % 10 == 0) {
+                        buffer[idx++] = '0';
+                } else {
+                        buffer[idx++] = digits[micro % 10];
+                }
+                micro /= 10;
+        }
+
+        buffer[idx++] = '.';
+
+        for (uint8_t i = 0; i < precision_sec; i++) {
+                if (sec % 10 == 0) {
+                        buffer[idx++] = ' ';
+                } else {
+                        buffer[idx++] = digits[sec % 10];
+                }
+                sec /= 10;
+        }
+
+        buffer[idx] = '[';
+
+
+        for (; 0 < idx; idx--) {
+                uart_putc(buffer[idx]);
+        }
+}
+
+void kprint_uint(uint64_t uval, uint8_t base)
+{
+        char buffer[64] = {0};
+        int i = 0;
+
+        do {
+                buffer[i++] = digits[uval % base];
+        } while((uval /= base) != 0);
+
+        for (; 0 <= i; i--) {
+                uart_putc(buffer[i]);
+        }
+}
+
+void kprint_int(int64_t val, uint8_t base)
+{
+        char buffer[64] = {0};
+        int i = 0;
+
+        do {
+                buffer[i++] = digits[val % base];
+        } while((val /= base) != 0);
+
+        if (val < 0) {
+                buffer[i++] = '-';
+        }
+
+        for (; 0 < i; i--) {
+                uart_putc(buffer[i]);
+        }
 }
 
 void kprint_str(const char *str)
 {
-	if (str == 0) {
-		uart_putc('(');
-		uart_putc('n');
-		uart_putc('u');
-		uart_putc('l');
-		uart_putc('l');
-		uart_putc(')');
-		uart_putc('\0');
-		
-		return;
-	}
+        if (str == 0) {
+                uart_putc('(');
+                uart_putc('n');
+                uart_putc('u');
+                uart_putc('l');
+                uart_putc('l');
+                uart_putc(')');
+                uart_putc('\0');
 
-	for (uint32_t i = 0; str[i] != '\0'; i++) {
-		uart_putc(str[i]);
-	}
-}
+                return;
+        }
 
-void log()
-{
-	return;
+        for (uint16_t i = 0; str[i] != '\0'; i++) {
+                uart_putc(str[i]);
+        }
 }
 
 void kprintf(const char *fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
+        va_list args;
+        va_start(args, fmt);
 
-	if (fmt == 0) {
-		return;
-	}
+        if (fmt == 0) {
+                return;
+        }
 
-	for (uint32_t i = 0; fmt[i] != '\0'; i++) {
-		char c = fmt[i];
+        for (uint16_t i = 0; fmt[i] != '\0'; i++) {
+                char c = fmt[i];
 
-		if (c != '%') {
-			uart_putc(c);
-			continue;
-		}
+                if (c != '%') {
+                        uart_putc(c);
+                        continue;
+                }
 
-		uint64_t *argp = va_arg(args, uint64_t*);		
-		c = fmt[++i];
+                c = fmt[++i];
 
-		switch (c) {
-		case 'd':
-			kprint_int(*argp, 10, 1);
-			break;
-		case 'x':
-		case 'p':
-			kprint_int(*argp, 16, 0);
-			break;
-		case 's':
-			kprint_str((const char *) argp);
-			break;
-		default:
-			uart_putc('%');
-			uart_putc(c);
-			break;
-		}
-	}
+                switch (c) {
+                case 'u':
+                        kprint_uint(*va_arg(args, uint64_t*), 10);
+                        break;
+                case 'd':
+                        kprint_int(*va_arg(args, int64_t*), 10);
+                        break;
+                case 'x':
+                case 'p':
+                        kprint_uint(*va_arg(args, uint64_t*), 16);
+                        break;
+                case 's':
+                       kprint_str(va_arg(args, const char*));
+                       break;
+                default:
+                       uart_putc('%');
+                       uart_putc(c);
+                       break;
+                }
+        }
 
-	va_end(args);
+        va_end(args);
+}
+
+void klog(const char *fmt, ...)
+{
+        va_list args;
+        va_start(args, fmt);
+
+        if (fmt == 0) {
+                return;
+        }
+
+        timestamp();
+
+
+        for (uint16_t i = 0; fmt[i] != '\0'; i++) {
+                char c = fmt[i];
+
+                if (c != '%') {
+                        uart_putc(c);
+                        continue;
+                }
+
+                c = fmt[++i];
+
+                switch (c) {
+                case 'u':
+                        kprint_uint(*va_arg(args, uint64_t*), 10);
+                        break;
+                case 'd':
+                        kprint_int(*va_arg(args, int64_t*), 10);
+                        break;
+                case 'x':
+                case 'p':
+                        kprint_uint(*va_arg(args, uint64_t*), 16);
+                        break;
+                case 's':
+                       kprint_str(va_arg(args, const char*));
+                       break;
+                default:
+                       uart_putc('%');
+                       uart_putc(c);
+                       break;
+                }
+        }
+
+        va_end(args);
 }
