@@ -1,21 +1,22 @@
+/*
+ * Main kernel entry. What TODO? (further research required)
+ *
+ * Author: Tuna CICI
+ */
+
 #include <stdint.h>
 
-void do_smth_weird(void)
-{
-    uint64_t my_stack_var[2048];
-
-    for (int i = 0; i < 2048; i++)
-        my_stack_var[i] = 42;
-
-    return;
-}
+#define BUFFER_SIZE 1024
 
 void kmain(void)
 {
-    uint64_t a[1024];
+        const uint8_t magic = 42;
+        uint64_t buffer[BUFFER_SIZE];
 
-    for(;;)
-    {
-        do_smth_weird();
-    }
+        /* Do something weird */
+        for(;;)
+        {
+                uint8_t i = 0;
+                buffer[i++ % BUFFER_SIZE] += magic;
+        }
 }

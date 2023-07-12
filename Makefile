@@ -39,6 +39,7 @@ OBJS = \
 	Kernel/Start.o \
 	Kernel/Main.o \
 	Kernel/Library/LibKern/Console.o \
+	Kernel/Library/LibKern/Time.o \
 
 KERN_OBJS = Entry.o ${OBJS}
 LDSCRIPT = Kernel/kernel.ld
