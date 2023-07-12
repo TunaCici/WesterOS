@@ -1,8 +1,7 @@
 /*
  * Console printing/logging functionalities for the Kernel
  *
- * Original src: mit-pdos/xv6-public
- * Modified by: Tuna CICI
+ * Author: Tuna CICI
  */
 
 #ifndef CONSOLE_H
