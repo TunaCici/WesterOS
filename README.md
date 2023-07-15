@@ -33,11 +33,11 @@ by writing a 'simple' operating system. What could go wrong?" And now, here I am
 
 ## **WesterOS**
 
-Work-in-progress hobbyist operating system based on MIT's xv6[^1]. The name is 
-from the most political & messed-up continent in the world of Game of Thrones.[^2]
-I really like GoT (yeah, judge me all you want) and the political messiness of it
-felt similar to my own goals with this project. _Everything is all over the place
-and nothing makes sense._
+Work-in-progress hobbyist operating system _/w "hand-made" microkernel_.
+The name is from the most political & messed-up continent in the world
+of Game of Thrones.[^2] I really like GoT (yeah, judge me all you want) and the
+political messiness of it felt similar to my own goals with this project.
+_Everything is all over the place and nothing makes sense._
 
 This project exists only to help _me_ learn about operating systems and to have
 some fun along the way. I don't claim to know much about _OS_ development. So,
@@ -52,14 +52,12 @@ you.
 
 ## **Features**
 
-* ARM64 kernel /w pre-emptive multithreading (Based on xv6)
-* Unix-like syscalls (Based on xv6)
-* `/dev` and `/proc` filesystems
-* Virtual Memory Management (Based on xv6)
-* 2-Level page tables /w 4K size
-* CLI based interface (Based on xv6)
-* Simple userland programs (Based on xv6)
-* Terminal games (?)
+* **ARM64 Microkernel design** _/w non-preemptive RR scheduling_
+* **Unix-like syscalls** _(still yet to be determined)_
+* **Virtual File System** _like `/dev` and `/proc` (idk if this is possible?)_
+* **Virtual Memory Management** _/w 4K page sizes_ _(wow. what a feature, eh?!)_
+* **CLI based interface** _/w basic shell commands like `mkdir`, `touch` & `cat`_
+* **Simple userland apps** _(Hmm.. What kind of games should I "make"?)_
 
 ## **Overview**
 
@@ -81,7 +79,24 @@ Here's the peripherals that I _plan_ to support.
 * [ARM PrimeCell GPIO PL061](https://developer.arm.com/documentation/ddi0190/)
 * [QEMU RAM FrameBuffer (?)](https://github.com/qemu/qemu/blob/master/hw/display/ramfb.c)
 
-[TODO: Kernel Specs (Similar to the image above)]()
+The kernel follows a simple microkernel design (like the L4-family). I wanted to
+make a _simple_ kernel that is easy to understand and help me learn as much as 
+possible during the process.
+
+I initially followed the MIT's [xv6](https://pdos.csail.mit.edu/6.828/2017/xv6.html). However, when asked, people told me that it was a bit too
+"naive/cheap" and would probably not help me IRL (_they are amazing people btw_).
+So, I decided to take their advice and go with a microkernel design. _it also
+seems more interesting o.o_
+
+> **Warning!** My _hand-made_ microkernel design WILL trigger you. For example,
+> I put the device drivers in the user space AND the scheduler inside
+> the kernel space (basically not really following a "proper/acedemic" design).
+> 
+> Just give me some time. I am still learning as I go >.<
+  
+Here's an overall overview of the kernel.
+
+![Kernel Overview](Media/Kernel_Overview.png "Kernel Overview")
 
 TODO: Overall OS specifications. What is what and the future goals.
 
@@ -110,7 +125,8 @@ TODO: How does everything starts? Why the things I do are the way they are?
 
 ### Kernel
 
-TODO: Tell everyone that this part is MAINLY referenced from xv6 and why so.
+TODO: Tell everyone why I choose to follow  a simple_microkernel_ design
+approach instead of a _generic/typical_ monolothic one (maybe even seL4?)
 
 ### Userland
 
