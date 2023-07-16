@@ -16,5 +16,6 @@
 #include <stdint.h>
 
 uint64_t arm64_uptime(void);
+void     arm64_sleep(const uint64_t msec);
 
 #endif /* TIME_H */
