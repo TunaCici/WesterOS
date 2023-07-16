@@ -1,5 +1,5 @@
 /*
- * Early boot stage. Sanity checks for hardware devices & "loads" kmain(...)
+ * Early boot stage. Sanity checks for hardware devices & "calls" kmain(...)
  *
  * Author: Tuna CICI
  */
@@ -7,16 +7,20 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include "ARM64/Machine.h"
 #include "MemoryLayout.h"
+
+#include "LibKern/Time.h"
 #include "LibKern/Console.h"
 
 extern void kmain(void);
 
-
 void _halt(const char *s)
 {
-        klog(s);
-        for(;;);
+        klog("Halting due to: ");
+        kprintf(s);
+ 
+        wfi();
 }
 
 /* Check if DTB exists */
@@ -34,66 +38,47 @@ void _fdt_check(void)
         kprintf(" found at Physical Address: 0x%p\n", &address);
 }
 
-
-/* Sleep for 'msec' miliseconds */
-void __attribute__((optimize("O0"))) ksleep(const uint64_t msec) 
-{
-        volatile uint64_t CNTVCT_EL0 = 0;
-        volatile uint64_t CNTFRQ_EL0 = 0;
-
-        uint64_t entry = 0;
-        uint64_t curr = 0;
- 
-        if (msec == 0) {
-                return;
-        }
-
-        asm volatile("MRS %[r], CNTVCT_EL0;" : [r]"=r" (CNTVCT_EL0));
-        asm volatile("MRS %[r], CNTFRQ_EL0;" : [r]"=r" (CNTFRQ_EL0));
-
-        entry = CNTVCT_EL0 * 1000 / CNTFRQ_EL0; /* Miliseconds passed so far */
-
-        do {       
-                asm volatile("MRS %[r], CNTVCT_EL0;" : [r]"=r" (CNTVCT_EL0));
-
-                curr = CNTVCT_EL0 * 1000 / CNTFRQ_EL0;
-        } while ((curr - entry) < msec);
-}
-
-/* Kernel & user page table addresses. Defined in Kernel/kernel.ld */
-extern uint64_t _kernel_pgtbl;
-extern uint64_t _user_pgtbl;
-extern uint64_t _K_l2_pgtbl;
-extern uint64_t _U_l2_pgtbl;
-extern uint64_t *end; /* First address after kernel. */
-
-uint64_t *kernel_pgtbl = &_kernel_pgtbl;
-uint64_t *user_pgtbl = &_user_pgtbl;
-
 void start(void)
 {
-        uint32_t arch;
-        uint32_t val32;
-        uint64_t val64;
+        volatile uint32_t arch;
+        volatile uint32_t val32;
+        volatile uint64_t val64;
+
+        /* Hard-coded device/board info */
+        /* TODO: Replace this with a DTB parser */
+        const char      *_cpuModel  = "Cortex A-72";
+        const uint32_t  *_coreCount = (uint32_t*) 0x00000002;
 
         klog("WesterOS early boot stage\n");
-
         klog("Running sanity checks...\n");
 
+        /* TODO: Any better way to early print? */
+        val64 = PL011_BASE;
+        klog("WARN: Raw printing directly to PL011 @ 0x%x\n", &val64);
+
+        /* -------- CPU -------- */
         klog("Checking CPU\n");
-        asm volatile("MRS %[r], MIDR_EL1":[r]"=r" (val32));
+        MRS("MIDR_EL1", val32);
         arch = (val32 & 0xFF000000) >> 24;
 
         if (arch == 0x41) {
-                klog("\tImplementer: ARM\n");
+                klog("---- Implementer: ARM\n");
         } else {
-                _halt("\t Unknown Implementer\n");
+                _halt("---- Unknown Implementer\n");
         }
 
-        asm volatile("MRS %[r], CurrentEL":[r]"=r" (val32));
+        klog("---- Model: %s\n", _cpuModel);
+        klog("---- SMP: %u\n", &_coreCount);
+
+        MRS("CNTFRQ_EL0", val64);
+        val64 = val64 / 1000000; /* Hz to MHz */
+
+        klog("---- Running @ %u MHz\n", &val64);
+
+        klog("---- Current exception level: ");
+        MRS("CurrentEL", val32);
         val32 = (val32 & 0x0C) >> 2;
 
-        klog("\tCurrent exception level: ");
         switch(val32) {
                 case 0:
                         kprintf("EL0 (User mode)\n");
@@ -113,20 +98,54 @@ void start(void)
         }
 
         /* Check if interrupts are enabled */
-        asm volatile("MRS %[r], DAIF" : [r]"=r" (val32));
-        klog("\tIRQ: ");
-        if (val32 & 0x80) {
+        klog("---- Interrupts: ");
+        MRS("DAIF", val32);
+
+        if (val32 & (1 << 7)) {
                 kprintf("Enabled\n");
         } else {
                 kprintf("Disabled\n");
         }
 
+        /* -------- Memory -------- */
+        klog("Checking Memory\n");
         _fdt_check();
+        klog("For now I skip DTB and instead hard-code everything :/\n");
 
-        uint32_t delay = 1250u;
-        klog("Sleeping for %u miliseconds. Zzz...\n", &delay);
-        ksleep(delay);
-        klog("Huh? Who woke me up?!\n");
+        val64 = RAM_SIZE / (1024 * 1024); /* Bytes to MiB */
+        klog("Total usable RAM area: %u MiB\n", &val64);
+
+        klog("QEMU ARM Virt Machine memory layout:\n");
+
+        val64 = BOOTROM_START;
+        klog("---- BootROM Code: 0x%x", &val64);
+        val64 = BOOTROM_END;
+        kprintf(" - 0x%x (reserved)\n", &val64);
+
+        val64 = GIC_BASE;
+        klog ("---- GIC: 0x%x", &val64);
+        val64 = GIC_END;
+        kprintf (" - 0x%x (controller)\n", &val64);
+
+        val64 = PL011_BASE;
+        klog ("---- PL011 UART: 0x%x", &val64);
+        val64 = PL011_END;
+        kprintf (" - 0x%x (mmio)\n", &val64);
+
+        val64 = PL031_BASE;
+        klog ("---- PL031  RTC: 0x%x", &val64);
+        val64 = PL031_END;
+        kprintf (" - 0x%x (mmio)\n", &val64);
+
+        val64 = PL061_BASE;
+        klog ("---- PL061 GPIO: 0x%x", &val64);
+        val64 = PL061_END;
+        kprintf (" - 0x%x (mmio)\n", &val64);
+
+        val64 = FW_CFG_BASE;
+        klog ("---- QEMU fw_cfg: 0x%x", &val64);
+        val64 = FW_CFG_END;
+        kprintf (" - 0x%x (qemu)\n", &val64);
 
         kmain();
 }

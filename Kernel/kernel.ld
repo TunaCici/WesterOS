@@ -51,6 +51,7 @@ SECTIONS
                 . += 0x4000;
 
                 PROVIDE(end_entry = .);
+                . += 0x1000;
         }
 
         /* the kernel executes at the higher address space, but loaded

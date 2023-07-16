@@ -27,7 +27,7 @@ OBJCOPY=${TOOLCHAIN_PATH}/bin/aarch64-none-elf-objcopy
 OBJDUMP=${TOOLCHAIN_PATH}/bin/aarch64-none-elf-objdump
 
 # Flags
-INCLUDES=-I Kernel/Include
+INCLUDES=-I Kernel/Include -I Kernel/Arch
 CFLAGS=${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -O2
 LDFLAGS=
 
