@@ -19,16 +19,15 @@ extern uint64_t _kernel_pgtbl;
 extern uint64_t _user_pgtbl;
 extern uint64_t _K_l2_pgtbl;
 extern uint64_t _U_l2_pgtbl;
-extern uint64_t *end; /* First address after kernel. */
+
+extern uint64_t *kstart;
+extern uint64_t *kend;
 
 uint64_t *kernel_pgtbl = &_kernel_pgtbl;
 uint64_t *user_pgtbl = &_user_pgtbl;
 
 void kmain(void)
 {
-        const uint8_t magic = 42;
-        uint64_t buffer[BUFFER_SIZE];
-
         /* Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;)

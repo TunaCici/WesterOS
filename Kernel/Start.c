@@ -15,6 +15,9 @@
 
 extern void kmain(void);
 
+extern uint64_t kstart;
+extern uint64_t kend;
+
 void _halt(const char *s)
 {
         klog("Halting due to: ");
@@ -47,7 +50,11 @@ void start(void)
         /* Hard-coded device/board info */
         /* TODO: Replace this with a DTB parser */
         const char      *_cpuModel  = "Cortex A-72";
-        const uint32_t  *_coreCount = (uint32_t*) 0x00000002;
+        const uint32_t  *_coreCount = (uint32_t*) 0x2;
+
+        /* Symbols. Defined in Kernel/kernel.ld */
+        const uint64_t *kernelBase = (uint64_t*) &kstart;
+        const uint64_t *kernelEnd = (uint64_t*) &kend;
 
         klog("WesterOS early boot stage\n");
         klog("Running sanity checks...\n");
@@ -113,7 +120,7 @@ void start(void)
         klog("For now I skip DTB and instead hard-code everything :/\n");
 
         val64 = RAM_SIZE / (1024 * 1024); /* Bytes to MiB */
-        klog("Total usable RAM area: %u MiB\n", &val64);
+        klog("Total available RAM area: %u MiB\n", &val64);
 
         klog("QEMU ARM Virt Machine memory layout:\n");
 
@@ -147,5 +154,20 @@ void start(void)
         val64 = FW_CFG_END;
         kprintf (" - 0x%x (qemu)\n", &val64);
 
+        val64 = DTB_START;
+        klog ("---- Device Tree Blob: 0x%x", &val64);
+        val64 = DTB_END;
+        kprintf (" - 0x%x (reserved)\n", &val64);
+
+        klog ("---- Kernel: 0x%x", &kernelBase);
+        kprintf (" - 0x%x (system)\n", &kernelEnd);
+
+        val64 = RAM_SIZE;
+        val64 -= DTB_SIZE;
+        val64 -= (kernelEnd - kernelBase);
+        val64 /= (1024 * 1024);
+        klog("Total usable RAM area: %u MiB\n", &val64);
+
+        klog("Everything's OK. Calling the Kernel now...\n");
         kmain();
 }

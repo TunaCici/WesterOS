@@ -13,6 +13,7 @@ SECTIONS
         /* Why? Cuz -> https://github.com/qemu/qemu/blob/master/hw/arm/virt.c */
         /* Also QEMU loads DTB at 0x4000_0000. So we move by 0x0001_0000 */
         . = 0x40100000;
+        PROVIDE (kstart = .);
         
         .start_sec : {
                 Build/Entry.o(.text)
@@ -84,5 +85,5 @@ SECTIONS
         }
 
         . = ALIGN(0x1000);
-        PROVIDE (end = .);
+        PROVIDE (kend = .);
 }
