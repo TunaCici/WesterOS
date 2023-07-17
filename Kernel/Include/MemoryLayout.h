@@ -31,7 +31,7 @@
 
 /* ARM PrimeCell GPIO (PL061) */
 #define PL061_BASE      0x09030000
-#define PL061_SIZE      0x00001000      /* 4KiB */
+#define PL061_SIZE      0x00001000      /* 4 KiB */
 #define PL061_END       (PL061_BASE + PL061_SIZE)
 
 /* QEMU: fw_cfg */
@@ -41,6 +41,8 @@
 
 /* Device Tree Blob (DTB) */
 #define DTB_START       0x40000000
+#define DTB_SIZE        0x00100000      /* 1 MiB */
+#define DTB_END         (DTB_START + DTB_SIZE)      
 
 /* 'Usable' Memory */
 #define RAM_START       0x40000000
