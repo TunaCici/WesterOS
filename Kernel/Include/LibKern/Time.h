@@ -17,6 +17,6 @@
 
 uint64_t arm64_uptime(void);
 
-void     ksleep(const uint64_t msec);
+void     ksleep(const uint64_t mSec);
 
 #endif /* TIME_H */

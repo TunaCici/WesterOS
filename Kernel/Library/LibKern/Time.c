@@ -16,8 +16,8 @@ uint64_t arm64_uptime(void)
         volatile uint64_t CNTVCT_EL0 = 0;
         volatile uint64_t CNTFRQ_EL0 = 0;
 
-        asm("MRS %[r], CNTVCT_EL0;" : [r]"=r" (CNTVCT_EL0));
-        asm("MRS %[r], CNTFRQ_EL0;" : [r]"=r" (CNTFRQ_EL0));
+        MRS("CNTVCT_EL0", CNTVCT_EL0);
+        MRS("CNTFRQ_EL0", CNTFRQ_EL0);
 
         uptime = CNTVCT_EL0 * NANO_PER_SEC / CNTFRQ_EL0;
 
@@ -25,7 +25,7 @@ uint64_t arm64_uptime(void)
 }
 
 /* Block the CPU for 'msec' miliseconds */
-void __attribute__((optimize("O0"))) ksleep(const uint64_t msec) 
+void __attribute__((optimize("O0"))) ksleep(const uint64_t mSec) 
 {
         volatile uint64_t CNTVCT_EL0 = 0;
         volatile uint64_t CNTFRQ_EL0 = 0;
@@ -33,7 +33,7 @@ void __attribute__((optimize("O0"))) ksleep(const uint64_t msec)
         uint64_t entry = 0;
         uint64_t curr = 0;
  
-        if (msec == 0) {
+        if (mSec == 0) {
                 return;
         }
 
@@ -45,5 +45,5 @@ void __attribute__((optimize("O0"))) ksleep(const uint64_t msec)
         do {
                 MRS("CNTVCT_EL0", CNTVCT_EL0);
                 curr = CNTVCT_EL0 * 1000 / CNTFRQ_EL0;
-        } while ((curr - entry) < msec);
+        } while ((curr - entry) < mSec);
 }
