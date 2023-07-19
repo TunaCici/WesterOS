@@ -20,9 +20,7 @@
 
 uint64_t init_allocator(const uint64_t *startAddr, const uint64_t *endAddr)
 {
-        uint64_t retValue = 0; /* Bytes allocated */
-
-
+        uint64_t retValue = 0; /* Bytes ready to be allocated */
 
         return retValue;
 }

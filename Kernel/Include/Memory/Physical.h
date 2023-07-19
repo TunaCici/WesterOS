@@ -35,7 +35,7 @@ typedef struct freeAreaStruct {
 /* TODO:        Maybe 'calculate' needed space inside init_allocator()? */
 /* TODO:        Then skip that area like: startAddr + calcBuddyPoolSize? */
 /* TODO:        Is this a stupid design? Need more research and asking around */
-/* TODO:        Btw see: kernel.org/doc/html/v4.19/core-api/boot-time-mm.html*/
+/* TODO:        Btw see: kernel.org/doc/html/v4.19/core-api/boot-time-mm.html */
 
 uint64_t init_allocator(const uint64_t *startAddr, const uint64_t *endAddr);
 

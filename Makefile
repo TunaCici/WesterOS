@@ -40,6 +40,7 @@ OBJS = \
 	Kernel/Main.o \
 	Kernel/Library/LibKern/Console.o \
 	Kernel/Library/LibKern/Time.o \
+	Kernel/Memory/Physical.o \
 
 KERN_OBJS = Entry.o ${OBJS}
 LDSCRIPT = Kernel/kernel.ld
@@ -78,6 +79,11 @@ debug:
 	@echo "OBJDUMP ${BUILD_DIR}/Entry.o"
 	@${OBJDUMP} -S ${BUILD_DIR}/Entry.o > ${BUILD_DIR}/entry.asm
 	@echo "OBJDUMP ${BUILD_DIR}/Entry.o ${GREEN}ok${NC}"
+
+compiledb:
+	@echo "COMPILEDB -n make all"
+	@compiledb -n make all
+	@echo "COMPILEDB -n make all ${GREEN}ok${NC}"
 
 all:
 	@echo "------------------------ ${MAGENTA} BINARIES ${NC} ------------------------"
