@@ -42,5 +42,4 @@ jobs:
 
       - name: Generate compile_commands
         run: |
-          compiledb make
-          
+          make compiledb
