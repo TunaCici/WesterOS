@@ -71,3 +71,4 @@ _deps
 # Executables
 *.exe
 *.out
+Tests/All_Test
