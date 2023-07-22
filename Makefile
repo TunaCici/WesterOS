@@ -43,8 +43,8 @@ INCLUDES = \
 	-I Tests/googletest/googletest/include
 CCFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -O2
 CXXFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=c++20 -O2
-HOST_CCFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -g
-HOST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=c++20 -g
+HOST_CCFLAGS = ${INCLUDES} -Wall -Wextra -std=gnu99 -g
+HOST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -std=c++20 -g
 
 # QEMU
 QEMU_SCRIPT = Emulation/launch-qemu.sh
