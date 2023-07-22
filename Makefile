@@ -142,7 +142,7 @@ debug:
 
 compiledb:
 	@echo "COMPILEDB -n make all"
-	@compiledb -n make all
+	@python3 -m compiledb -n make all
 	@echo "COMPILEDB -n make all ${GREEN}ok${NC}"
 
 all:
