@@ -20,8 +20,8 @@ BUILD_DIR 	= Build
 TEST_DIR	= Tests
 
 # Target architecture & Toolchain
-TARGET_ARCH=aarch64
-TOOLCHAIN_PATH=Toolchain/arm-gnu-toolchain-12.2.rel1-darwin-arm64-aarch64-none-elf
+TARGET_ARCH = aarch64
+TOOLCHAIN_PATH = Toolchain/arm-gnu-toolchain-12.2.rel1-darwin-arm64-aarch64-none-elf
 
 # Cross-compiler
 CC = ${TOOLCHAIN_PATH}/bin/aarch64-none-elf-gcc
@@ -38,9 +38,14 @@ HOST_CXX = clang++
 HOST_AR = ar
 
 # Flags
-INCLUDES = -I Kernel/Include -I Kernel/Arch
+INCLUDES = \
+	-I Kernel/Include -I Kernel/Arch \
+	-I Tests/googletest/googletest/include
 CCFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -O2
+CXXFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=c++20 -O2
 HOST_CCFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -g
+HOST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=c++20 -g
+
 # QEMU
 QEMU_SCRIPT = Emulation/launch-qemu.sh
 
@@ -63,7 +68,7 @@ GTEST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -lc++ -std=c++20 \
 # We can just ignore "unreslved symbols" with -dead-strip.
 # > maybe in the future I can find a better way. who knows...
 
-# Binary/object files
+# Project source files
 SRCS = \
 	Kernel/Start.c \
 	Kernel/Main.c \
@@ -72,8 +77,12 @@ SRCS = \
 	Kernel/Memory/Physical.c
 OBJS = ${SRCS:.c=.o}
 
-TEST_SRCS = Tests/MemoryPhysical.cpp
-TEST_OBJS = ${TEST_SRCS:.cpp=.o}
+# Test source files (must be hardware-independent)
+TEST_SRCS = \
+	Kernel/Memory/Physical.c \
+	Tests/MemoryPhysical.cpp
+TEST_OBJS := ${filter %.o, ${TEST_SRCS:.c=.o}}
+TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 
 LDSCRIPT = Kernel/kernel.ld
 
@@ -90,11 +99,11 @@ CROSS ?= True
 default: all
 
 Entry.o: ${ENTRY}
-	@echo "AS ${ENTRY}"
+	@echo "AS ${ENTRY} -> ${BUILD_DIR}/Entry.o"
 	@${AS} ${ENTRY} -o ${BUILD_DIR}/Entry.o
 	@echo "AS ${ENTRY} ${GREEN}ok${NC}"
 
-${OBJS}: %.o: %.c
+%.o: %.c
 ifeq (${CROSS}, True)
 	@echo "CC $<"
 	@${CC} ${CCFLAGS} -c $< -o ${BUILD_DIR}/${notdir $@}
@@ -103,6 +112,17 @@ else
 	@echo "HOST_CC $<"
 	@${HOST_CC} ${HOST_CCFLAGS} -c $< -o ${TEST_DIR}/${notdir $@}
 	@echo "HOST_CC $< ${GREEN}ok${NC}"
+endif
+
+%.o: %.cpp
+ifeq (${CROSS}, True)
+	@echo "CXX $<"
+	@${CXX} ${CXXFLAGS} -c $< -o ${BUILD_DIR}/${notdir $@}
+	@echo "CXX $< ${GREEN}ok${NC}"
+else
+	@echo "HOST_CXX $<"
+	@${HOST_CXX} ${HOST_CXXFLAGS} -c $< -o ${TEST_DIR}/${notdir $@}
+	@echo "HOST_CXX $< ${GREEN}ok${NC}"
 endif
 
 kernel: Entry.o ${OBJS}
@@ -172,17 +192,11 @@ libgtest_main.a: libgtest.a ${GTEST_SRCS}
 		${TEST_DIR}/gtest-all.o ${TEST_DIR}/gtest_main.o
 	@echo "HOST_AR ${TEST_DIR}/$@ ${GREEN}ok${NC}"
 
-${TEST_OBJS}: ${TEST_SRCS}
-	@echo "HOST_CXX $@"
-	@${HOST_CXX} ${GTEST_CPPFLAGS} ${GTEST_CXXFLAGS} -c $< -o ${TEST_DIR}/${notdir $@}
-	@echo "HOST_CXX $@ ${GREEN}ok${NC}"
-
-all_test: ${TEST_OBJS} ${GTEST_LIBS} ${OBJS}
-	@echo "HOST_CXX ${TEST_OBJS} ${addprefix ${TEST_DIR}/, $(notdir ${OBJS})} ${TEST_DIR}/libgtest_main.a"
+all_test: ${TEST_OBJS} ${GTEST_LIBS}
+	@echo "HOST_CXX ${addprefix ${TEST_DIR}/, $(notdir ${TEST_OBJS})} ${TEST_DIR}/libgtest_main.a"
 	@${HOST_CXX} ${GTEST_CPPFLAGS} ${GTEST_CXXFLAGS} \
-		${TEST_OBJS} \
-		${TEST_DIR}/libgtest_main.a -o ${TEST_DIR}/All_Test \
-		${addprefix ${TEST_DIR}/, $(notdir ${OBJS})}
+		${addprefix ${TEST_DIR}/, $(notdir ${TEST_OBJS})} \
+		${TEST_DIR}/libgtest_main.a -o ${TEST_DIR}/All_Test
 	@echo "HOST_CXX ${TEST_OBJS} ${addprefix ${TEST_DIR}/, $(notdir ${OBJS})} ${TEST_DIR}/libgtest_main.a ${GREEN}ok${NC}"
 
 test:
