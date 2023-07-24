@@ -16,11 +16,14 @@
 #include <stdint.h>
 
 #include "Memory/Physical.h"
+
 #include "LibKern/Console.h"
 
-uint64_t init_allocator(const uint64_t *startAddr, const uint64_t *endAddr)
+uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
 {
         uint64_t retValue = 0; /* Bytes ready to be allocated */
+
+        retValue = (endAddr - startAddr) / PAGE_SIZE;
 
         return retValue;
 }

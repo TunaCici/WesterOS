@@ -224,3 +224,6 @@ clean:
 	@find ${TEST_DIR} -name "*.a" -type f -delete
 	@find ${TEST_DIR} -name "${TEST_OBJS}" -type f -delete
 	@find ${TEST_DIR} -name "All_Test" -type f -delete
+
+	@echo "Cleaning 'compile_commands.json' ."
+	@find . -name "compile_commands.json" -type f -delete
