@@ -21,6 +21,8 @@
 #define PAGE_SIZE 4096 /* Bytes */
 #define MAX_ORDER 11 /* Block size: 2^0 ... 2^(MAX_ORDER - 1) * PAGE_SIZE */
 
+#define PALIGN(addr) (((uint64_t) addr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1))
+
 typedef struct freeAreaStruct {
         uint64_t *listHead;
         /* TODO: How to keep track of freemem? */
@@ -37,6 +39,6 @@ typedef struct freeAreaStruct {
 /* TODO:        Is this a stupid design? Need more research and asking around */
 /* TODO:        Btw see: kernel.org/doc/html/v4.19/core-api/boot-time-mm.html */
 
-uint64_t init_allocator(const uint64_t *startAddr, const uint64_t *endAddr);
+uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr);
 
 #endif /* PHYSICAL_H */
