@@ -123,7 +123,7 @@ void kprint_str(const char *str)
         }
 }
 
-void kprintf(const char *fmt, ...)
+void __attribute__((format(printf, 1, 2))) kprintf(const char *fmt, ...) 
 {
         va_list args;
         va_start(args, fmt);
@@ -166,7 +166,7 @@ void kprintf(const char *fmt, ...)
         va_end(args);
 }
 
-void klog(const char *fmt, ...)
+void __attribute__((format(printf, 1, 2))) klog(const char *fmt, ...)
 {
         va_list args;
         va_start(args, fmt);
