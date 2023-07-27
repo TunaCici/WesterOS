@@ -74,6 +74,7 @@ SRCS = \
 	Kernel/Main.c \
 	Kernel/Library/LibKern/Console.c \
 	Kernel/Library/LibKern/Time.c \
+	Kernel/Memory/BootMem.c \
 	Kernel/Memory/Physical.c
 OBJS = ${SRCS:.c=.o}
 

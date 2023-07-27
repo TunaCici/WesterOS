@@ -7,14 +7,14 @@
 #include <stdint.h>
 
 #include "ARM64/Machine.h"
+#include "Memory/PageDef.h"
 #include "MemoryLayout.h"
 
 #include "LibKern/Time.h"
 #include "LibKern/Console.h"
 
+#include "Memory/BootMem.h"
 #include "Memory/Physical.h"
-
-#define BUFFER_SIZE 1024
 
 /* Kernel & user page table addresses. Defined in Kernel/kernel.ld */
 extern uint64_t _kernel_pgtbl;
@@ -32,11 +32,30 @@ void kmain(void)
 {
         const uint8_t *kernelBase = (uint8_t*) &kstart;
         const uint8_t *kernelEnd = (uint8_t*) &kend;
+
+        const uint8_t *ramStart = (uint8_t*) RAM_START;
         const uint8_t *ramEnd = (uint8_t*) RAM_END;
         
-        uint64_t pageCount = init_allocator(kernelEnd, ramEnd);
-        
-        klog("[kmain] Amount of pages available: %u\n", &pageCount);
+        /**
+         * Need an addt. early mm before a nice buddy pmm can be initialized.
+         * It needs to have a FIXED size such as 16MiB or smth.
+         * A simple freelist structure should do the trick /w bit-mapped pages.
+         *
+         * TODO: Implement a new mm called "BootMem" and then init buddy pmm.
+         **/
+
+        if ((ramEnd - ramStart) < BM_ARENA_SIZE * PAGE_SIZE) {
+                klog("[kmain] Not enough RAM available to boot :(\n");
+                /* TODO: Panic here */
+        }
+
+        klog("[kmain] Initializing early memory manager...\n");
+
+        uint64_t pageCount = init_bootmem(ramStart);
+        uint64_t freeBytes = (pageCount * PAGE_SIZE) / 1024; /* KiB */
+
+        klog("[kmain] Amount of pages available: %u (%u KiB)\n",
+                &pageCount, &freeBytes);
 
         /* Do something weird */
         klog("[kmain] imma just sleep\n");
