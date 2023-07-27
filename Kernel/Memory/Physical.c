@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include "Memory/PageDef.h"
 #include "Memory/Physical.h"
 
 #include "LibKern/Console.h"
@@ -22,8 +23,11 @@
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
 {
         uint64_t retValue = 0; /* Bytes ready to be allocated */
-
-        retValue = (endAddr - startAddr) / PAGE_SIZE;
+        
+        uint8_t *alignedStart = (uint8_t*) PALIGN(startAddr);
+        uint8_t *alignedEnd = (uint8_t*) PALIGN(endAddr - PAGE_SIZE + 1);
+        
+        retValue = (alignedEnd - alignedStart) / PAGE_SIZE;
 
         return retValue;
 }

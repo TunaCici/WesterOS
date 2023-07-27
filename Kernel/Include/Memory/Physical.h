@@ -18,13 +18,15 @@
 
 #include <stdint.h>
 
-#define PAGE_SIZE 4096 /* Bytes */
-#define MAX_ORDER 11 /* Block size: 2^0 ... 2^(MAX_ORDER - 1) * PAGE_SIZE */
+#include "Memory/PageDef.h"
 
-#define PALIGN(addr) (((uint64_t) addr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1))
+typedef struct block {
+        page_t *listHead;
+        uint64_t *map;
+} block_t;
 
 typedef struct freeAreaStruct {
-        uint64_t *listHead;
+        uint8_t *listHead;
         /* TODO: How to keep track of freemem? */
 } freeArea_t;
 
@@ -37,8 +39,14 @@ typedef struct freeAreaStruct {
 /* TODO:        Maybe 'calculate' needed space inside init_allocator()? */
 /* TODO:        Then skip that area like: startAddr + calcBuddyPoolSize? */
 /* TODO:        Is this a stupid design? Need more research and asking around */
-/* TODO:        Btw see: kernel.org/doc/html/v4.19/core-api/boot-time-mm.html */
+/* TODO:        See the below materials */
+/* TODO:        https://kernel.org/doc/html/v4.19/core-api/boot-time-mm.html */
+/* TODO:        http://halobates.de/memory.pdf */
+/* TODO:        https://kernel.org/doc/gorman/html/understand/ */
 
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr);
+
+void* alloc_page(const uint32_t numPages);
+void* free_page(void *targetAddr, const uint32_t numPages);
 
 #endif /* PHYSICAL_H */
