@@ -30,16 +30,16 @@ uint64_t *user_pgtbl = &_user_pgtbl;
 
 void kmain(void)
 {
-        const uint8_t *kernelBase = (uint8_t*) &kstart;
+        const uint8_t *kernelStart = (uint8_t*) &kstart;
         const uint8_t *kernelEnd = (uint8_t*) &kend;
 
         const uint8_t *ramStart = (uint8_t*) RAM_START;
         const uint8_t *ramEnd = (uint8_t*) RAM_END;
-        
+
         /**
          * Need an addt. early mm before a nice buddy pmm can be initialized.
          * It needs to have a FIXED size such as 16MiB or smth.
-         * A simple freelist structure should do the trick /w bit-mapped pages.
+         * A simple First-Fit alloc should do the trick /w bit-mapped pages.
          *
          * TODO: Implement a new mm called "BootMem" and then init buddy pmm.
          **/
@@ -51,16 +51,23 @@ void kmain(void)
 
         klog("[kmain] Initializing early memory manager...\n");
 
-        uint64_t pageCount = init_bootmem(ramStart);
+        uint64_t pageCount = bootmem_init(ramStart);
         uint64_t freeBytes = (pageCount * PAGE_SIZE) / 1024; /* KiB */
 
         klog("[kmain] Amount of pages available: %u (%u KiB)\n",
                 &pageCount, &freeBytes);
 
+        void *myArea = bootmem_alloc(10);
+
+        if (myArea) {
+                klog("[kmain] bootmem_alloc OK\n");
+        } else {
+                klog("[kmain] bootmem_alloc FAIL\n");
+        }
+
         /* Do something weird */
         klog("[kmain] imma just sleep\n");
-        for(;;)
-        {
+        for(;;) {
                 klog("[kmain] Zzz..\n");
                 ksleep(3000);
         }
