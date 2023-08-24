@@ -1,5 +1,5 @@
 /*
- * Early boot memory manager using Free Lists.
+ * Early boot memory manager using First-Fit allocation.
  *
  * Allows the kernel to have basic dyn. memory before PMM is fully initialized.
  *
@@ -14,10 +14,10 @@
 
 #include "LibKern/Console.h"
 
-static page_t pageList[BM_ARENA_SIZE] = {0};
-static uint8_t map[BM_MAP_SIZE] = {0};
+volatile static uint8_t map[BM_MAP_SIZE] = {1};
+volatile static page_t pageList[BM_ARENA_SIZE] = {0};
 
-uint16_t init_bootmem(const uint8_t *startAddr)
+uint16_t bootmem_init(const uint8_t *startAddr)
 {
         uint16_t retValue = 0; /* Pages available */
         uint8_t *alignedStart = 0;
@@ -40,18 +40,37 @@ uint16_t init_bootmem(const uint8_t *startAddr)
 
         /* Test it */
         for (uint64_t i = 0; i < BM_ARENA_SIZE; i++) {
-                klog("[bootmem] pageList[%u].addr: %x\n", &i, &pageList[i].addr);
+                klog("[bootmem] pageList[%u].addr: 0x%x\n", &i, &pageList[i].addr);
         }
 
         return retValue;
 }
 
-void* alloc_bootmem(const uint32_t numPages)
+void* bootmem_alloc(const uint32_t numPages)
+{
+        void *retAddr = 0;
+
+        for (uint64_t i = 0; i < BM_ARENA_SIZE; i++) {
+                uint64_t myBit = BM_MAP_GET(map, i);
+
+                klog("[bootmem] bit %u of map is %u\n", &i, &myBit);
+        }
+
+        return retAddr;
+}
+
+uint8_t bootmem_free(void *targetAddr, const uint32_t numPages)
 {
         return 0;
 }
 
-void* free_bootmem(void *targetAddr, const uint32_t numPages)
+/* START DEBUG ONLY */
+
+void bootmem_klog_map(void) 
 {
-        return 0;
+        for (uint64_t i = 0; i < BM_MAP_SIZE; i++) {
+                klog("[bootmem] map[%u]: 0x%x\n", &i, map[i]);
+        }
 }
+
+/* END DEBUG ONLY */

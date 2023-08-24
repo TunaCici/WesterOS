@@ -1,5 +1,5 @@
 /*
- * Early boot memory manager using Free Lists.
+ * Early boot memory manager using First-Fit allocation.
  *
  * Allows the kernel to have basic dyn. memory before PMM is fully initialized.
  *
@@ -16,9 +16,17 @@
 #define BM_ARENA_SIZE      4096 /* Pages */
 #define BM_MAP_SIZE        (BM_ARENA_SIZE / 8) /* Cuz -> uint8_t */
 
-uint16_t init_bootmem(const uint8_t *startAddr);
+#define BM_MAP_GET(map, idx) (map[idx / 8] & (1 << (idx % 8)))
+#define BM_MAP_SET(map, idx) (map[idx / 8] |= (1 << (idx % 8)))
+#define BM_MAP_RST(map, idx) (map[idx / 8] &= ~(1 << (idx % 8)))
 
-void* alloc_bootmem(const uint32_t numPages);
-void* free_bootmem(void *targetAddr, const uint32_t numPages);
+uint16_t bootmem_init(const uint8_t *startAddr);
+
+void* bootmem_alloc(const uint32_t numPages);
+uint8_t bootmem_free(void *targetAddr, const uint32_t numPages);
+
+/* START DEBUG ONLY */
+void bootmem_klog_map(void);
+/* END DEBUG ONLY */
 
 #endif /* BOOTMEM_H */
