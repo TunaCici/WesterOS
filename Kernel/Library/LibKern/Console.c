@@ -133,6 +133,7 @@ void __attribute__((format(printf, 1, 2))) kprintf(const char *fmt, ...)
         }
 
         for (uint16_t i = 0; fmt[i] != '\0'; i++) {
+                uint8_t isLong = 0;
                 char c = fmt[i];
 
                 if (c != '%') {
@@ -142,16 +143,22 @@ void __attribute__((format(printf, 1, 2))) kprintf(const char *fmt, ...)
 
                 c = fmt[++i];
 
+                /* TODO: Implement 'long' values */
+                if (c == 'l') {
+                        isLong = 1u;
+                        c = fmt[++i];
+                }
+
                 switch (c) {
                 case 'u':
-                        kprint_uint(*va_arg(args, uint64_t*), 10);
+                        kprint_uint(va_arg(args, uint64_t), 10);
                         break;
                 case 'd':
-                        kprint_int(*va_arg(args, int64_t*), 10);
+                        kprint_int(va_arg(args, int64_t), 10);
                         break;
                 case 'x':
                 case 'p':
-                        kprint_uint(*va_arg(args, uint64_t*), 16);
+                        kprint_uint(va_arg(args, uint64_t), 16);
                         break;
                 case 's':
                        kprint_str(va_arg(args, const char*));
@@ -179,6 +186,7 @@ void __attribute__((format(printf, 1, 2))) klog(const char *fmt, ...)
 
 
         for (uint16_t i = 0; fmt[i] != '\0'; i++) {
+                uint8_t isLong = 0;
                 char c = fmt[i];
 
                 if (c != '%') {
@@ -187,17 +195,23 @@ void __attribute__((format(printf, 1, 2))) klog(const char *fmt, ...)
                 }
 
                 c = fmt[++i];
+                
+                /* TODO: Implement 'long' values */
+                if (c == 'l') {
+                        isLong = 1u;
+                        c = fmt[++i];
+                }
 
                 switch (c) {
                 case 'u':
-                        kprint_uint(*va_arg(args, uint64_t*), 10);
+                        kprint_uint(va_arg(args, uint64_t), 10);
                         break;
                 case 'd':
-                        kprint_int(*va_arg(args, int64_t*), 10);
+                        kprint_int(va_arg(args, int64_t), 10);
                         break;
                 case 'x':
                 case 'p':
-                        kprint_uint(*va_arg(args, uint64_t*), 16);
+                        kprint_uint(va_arg(args, uint64_t), 16);
                         break;
                 case 's':
                        kprint_str(va_arg(args, const char*));

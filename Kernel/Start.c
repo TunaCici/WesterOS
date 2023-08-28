@@ -20,9 +20,8 @@ extern uint64_t kend;
 
 void _halt(const char *s)
 {
-        klog("Halting due to: ");
-        kprintf(s);
- 
+        klog("Halting due to: %s", s);
+
         wfi();
 }
 
@@ -50,7 +49,7 @@ void start(void)
         /* Hard-coded device/board info */
         /* TODO: Replace this with a DTB parser */
         const char      *_cpuModel  = "Cortex A-72";
-        const uint32_t  *_coreCount = (uint32_t*) 0x2;
+        const uint32_t  _coreCount =  2u;
 
         /* Symbols. Defined in Kernel/kernel.ld */
         const uint64_t *kernelBase = (uint64_t*) &kstart;
@@ -60,8 +59,7 @@ void start(void)
         klog("Running sanity checks...\n");
 
         /* TODO: Any better way to early print? */
-        val64 = PL011_BASE;
-        klog("WARN: Raw printing directly to PL011 @ 0x%x\n", &val64);
+        klog("WARN: Raw printing directly to PL011 @ 0x%x\n", PL011_BASE);
 
         /* -------- CPU -------- */
         klog("Checking CPU\n");
@@ -75,12 +73,12 @@ void start(void)
         }
 
         klog("---- Model: %s\n", _cpuModel);
-        klog("---- SMP: %u\n", &_coreCount);
+        klog("---- SMP: %u\n", _coreCount);
 
         MRS("CNTFRQ_EL0", val64);
         val64 = val64 / 1000000; /* Hz to MHz */
 
-        klog("---- Running @ %u MHz\n", &val64);
+        klog("---- Running @ %lu MHz\n", val64);
 
         klog("---- Current exception level: ");
         MRS("CurrentEL", val32);
@@ -120,53 +118,48 @@ void start(void)
         klog("For now I skip DTB and instead hard-code everything :/\n");
 
         val64 = RAM_SIZE / (1024 * 1024); /* Bytes to MiB */
-        klog("Total available RAM area: %u MiB\n", &val64);
+        klog("Total available RAM area: %lu MiB\n", val64);
 
         klog("QEMU ARM Virt Machine memory layout:\n");
 
-        val64 = BOOTROM_START;
-        klog("---- BootROM Code: 0x%x", &val64);
-        val64 = BOOTROM_END;
-        kprintf(" - 0x%x (reserved)\n", &val64);
+        klog("---- BootROM Code: 0x%x - 0x%x (reserved)\n",
+                BOOTROM_START, BOOTROM_END
+        );
 
-        val64 = GIC_BASE;
-        klog ("---- GIC: 0x%x", &val64);
-        val64 = GIC_END;
-        kprintf (" - 0x%x (controller)\n", &val64);
+        klog ("---- GIC: 0x%x - 0x%x (controller)\n",
+                GIC_BASE, GIC_END
+        );
 
-        val64 = PL011_BASE;
-        klog ("---- PL011 UART: 0x%x", &val64);
-        val64 = PL011_END;
-        kprintf (" - 0x%x (mmio)\n", &val64);
+        klog ("---- PL011 UART: 0x%x - 0x%x (mmio)\n",
+                PL011_BASE, PL011_END
+        );
 
-        val64 = PL031_BASE;
-        klog ("---- PL031  RTC: 0x%x", &val64);
-        val64 = PL031_END;
-        kprintf (" - 0x%x (mmio)\n", &val64);
+        klog ("---- PL031  RTC: 0x%x - 0x%x (mmio)\n",
+                PL031_BASE, PL031_END
+        );
 
-        val64 = PL061_BASE;
-        klog ("---- PL061 GPIO: 0x%x", &val64);
-        val64 = PL061_END;
-        kprintf (" - 0x%x (mmio)\n", &val64);
+        klog ("---- PL061 GPIO: 0x%x - 0x%x (mmio)\n", 
+                PL061_BASE, PL061_END
+        );
 
-        val64 = FW_CFG_BASE;
-        klog ("---- QEMU fw_cfg: 0x%x", &val64);
-        val64 = FW_CFG_END;
-        kprintf (" - 0x%x (qemu)\n", &val64);
+        klog ("---- QEMU fw_cfg: 0x%x - 0x%x (qemu)\n",
+                FW_CFG_BASE, FW_CFG_END
+        );
 
-        val64 = DTB_START;
-        klog ("---- Device Tree Blob: 0x%x", &val64);
-        val64 = DTB_END;
-        kprintf (" - 0x%x (reserved)\n", &val64);
+        klog ("---- Device Tree Blob: 0x%x - 0x%x (reserved)\n",
+                DTB_START, DTB_END
+        );
 
-        klog ("---- Kernel: 0x%x", &kernelBase);
-        kprintf (" - 0x%x (system)\n", &kernelEnd);
+        klog ("---- Kernel: 0x%p - 0x%p (system)\n",
+                kernelBase,
+                kernelEnd
+        );
 
         val64 = RAM_SIZE;
         val64 -= DTB_SIZE;
         val64 -= (kernelEnd - kernelBase);
         val64 /= (1024 * 1024);
-        klog("Total usable RAM area: %u MiB\n", &val64);
+        klog("Total usable RAM area: %lu MiB\n", val64);
 
         klog("Everything's OK. Calling the Kernel now...\n");
         kmain();

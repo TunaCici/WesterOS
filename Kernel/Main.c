@@ -54,13 +54,22 @@ void kmain(void)
         uint64_t pageCount = bootmem_init(ramStart);
         uint64_t freeBytes = (pageCount * PAGE_SIZE) / 1024; /* KiB */
 
-        klog("[kmain] Amount of pages available: %u (%u KiB)\n",
-                &pageCount, &freeBytes);
+        klog("[kmain] Amount of pages available: %lu (%lu KiB)\n",
+                pageCount, freeBytes
+        );
 
-        void *myArea = bootmem_alloc(10);
+        void *myArea = bootmem_alloc(32);
 
         if (myArea) {
-                klog("[kmain] bootmem_alloc OK\n");
+                klog("[kmain] bootmem_alloc OK 0x%p\n", myArea);
+        } else {
+                klog("[kmain] bootmem_alloc FAIL\n");
+        }
+
+        void *myArea2 = bootmem_alloc(128);
+
+        if (myArea2) {
+                klog("[kmain] bootmem_alloc OK 0x%p\n", myArea2);
         } else {
                 klog("[kmain] bootmem_alloc FAIL\n");
         }
