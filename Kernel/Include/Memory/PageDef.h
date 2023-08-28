@@ -15,7 +15,7 @@
 #define PALIGN(addr) (((uint64_t) addr + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1))
 
 typedef struct page {
-        const uint8_t *addr;    /* Physical */
+        uint8_t *addr;    /* Physical */
         uint64_t flags;         /* TODO: Meta-data & permissions */
 } page_t;
 
