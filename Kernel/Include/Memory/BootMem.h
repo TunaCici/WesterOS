@@ -21,9 +21,7 @@
 #define BM_MAP_RST(map, idx) (map[idx / 8] &= ~(1 << (idx % 8)))
 
 uint16_t bootmem_init(const uint8_t *startAddr);
-
-void* bootmem_alloc(const uint32_t numPages);
-uint8_t bootmem_free(void *targetAddr, const uint32_t numPages);
+void*    bootmem_alloc(const uint16_t numPages);
 
 /* START DEBUG ONLY */
 void bootmem_klog_map(void);

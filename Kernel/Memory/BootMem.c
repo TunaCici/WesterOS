@@ -6,7 +6,6 @@
  * Author: Tuna CICI
  */
 
-#include <stdint-gcc.h>
 #include <stdint.h>
 
 #include "Memory/PageDef.h"
@@ -14,8 +13,8 @@
 
 #include "LibKern/Console.h"
 
-volatile static uint8_t map[BM_MAP_SIZE] = {1};
-volatile static page_t pageList[BM_ARENA_SIZE] = {0};
+static volatile uint8_t map[BM_MAP_SIZE] = {1};
+static volatile page_t pageList[BM_ARENA_SIZE] = {0};
 
 uint16_t bootmem_init(const uint8_t *startAddr)
 {
@@ -39,37 +38,65 @@ uint16_t bootmem_init(const uint8_t *startAddr)
         }
 
         /* Test it */
-        for (uint64_t i = 0; i < BM_ARENA_SIZE; i++) {
-                klog("[bootmem] pageList[%u].addr: 0x%x\n", &i, &pageList[i].addr);
+        for (uint16_t i = 0; i < BM_ARENA_SIZE; i++) {
+                // klog("[bootmem] pageList[%u].addr: 0x%x\n", &i, &pageList[i].addr);
         }
 
         return retValue;
 }
 
-void* bootmem_alloc(const uint32_t numPages)
+uint8_t bootmem_calc_fitting(const uint32_t startIdx, const uint32_t numPages)
+{
+        if (BM_ARENA_SIZE < startIdx + numPages) {
+                return 0;
+        }
+
+        for (uint32_t i = 0; i < numPages; i++) {
+                if (BM_MAP_GET(map, startIdx + i) == 1) {
+                        /* it doesn't fit :( */
+                        return 0;
+                }
+        }
+
+        return 1;
+}
+
+void bootmem_mark_used(const uint16_t startIdx, const uint16_t endIdx)
+{
+        for (uint16_t i = startIdx; i < endIdx; i++) {
+                BM_MAP_SET(map, i);
+        }
+}
+
+void* bootmem_alloc(const uint16_t numPages)
 {
         void *retAddr = 0;
 
-        for (uint64_t i = 0; i < BM_ARENA_SIZE; i++) {
-                uint64_t myBit = BM_MAP_GET(map, i);
+        for (uint16_t i = 0; i < BM_ARENA_SIZE; i++) {
+                if (BM_MAP_GET(map, i)) {
+                        continue;
+                }
 
-                klog("[bootmem] bit %u of map is %u\n", &i, &myBit);
+                uint8_t fits = bootmem_calc_fitting(i, numPages);
+
+                if (fits) {
+                        bootmem_mark_used(i, i + numPages);
+
+                        retAddr = pageList[i].addr;
+                        
+                        break;
+                }
         }
 
         return retAddr;
-}
-
-uint8_t bootmem_free(void *targetAddr, const uint32_t numPages)
-{
-        return 0;
 }
 
 /* START DEBUG ONLY */
 
 void bootmem_klog_map(void) 
 {
-        for (uint64_t i = 0; i < BM_MAP_SIZE; i++) {
-                klog("[bootmem] map[%u]: 0x%x\n", &i, map[i]);
+        for (uint16_t i = 0; i < BM_MAP_SIZE; i++) {
+                klog("[bootmem] map[%u]: 0x%x\n", i, map[i]);
         }
 }
 
