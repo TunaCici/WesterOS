@@ -7,12 +7,12 @@
 #include <stdint.h>
 
 #include "ARM64/Machine.h"
-#include "Memory/PageDef.h"
 #include "MemoryLayout.h"
 
 #include "LibKern/Time.h"
 #include "LibKern/Console.h"
 
+#include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
 #include "Memory/Physical.h"
 
@@ -51,14 +51,14 @@ void kmain(void)
 
         klog("[kmain] Initializing early memory manager...\n");
 
-        uint64_t pageCount = bootmem_init(ramStart);
+        uint64_t pageCount = bootmem_init(kernelEnd);
         uint64_t freeBytes = (pageCount * PAGE_SIZE) / 1024; /* KiB */
 
         klog("[kmain] Amount of pages available: %lu (%lu KiB)\n",
                 pageCount, freeBytes
         );
 
-        void *myArea = bootmem_alloc(32);
+        void *myArea = bootmem_alloc(64);
 
         if (myArea) {
                 klog("[kmain] bootmem_alloc OK 0x%p\n", myArea);
@@ -66,10 +66,18 @@ void kmain(void)
                 klog("[kmain] bootmem_alloc FAIL\n");
         }
 
-        void *myArea2 = bootmem_alloc(128);
+        void *myArea2 = bootmem_alloc(2048);
 
         if (myArea2) {
                 klog("[kmain] bootmem_alloc OK 0x%p\n", myArea2);
+        } else {
+                klog("[kmain] bootmem_alloc FAIL\n");
+        }
+
+        void *myArea3 = bootmem_alloc(2077);
+
+        if (myArea3) {
+                klog("[kmain] bootmem_alloc OK 0x%p\n", myArea3);
         } else {
                 klog("[kmain] bootmem_alloc FAIL\n");
         }

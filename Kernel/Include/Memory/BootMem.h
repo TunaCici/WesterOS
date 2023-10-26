@@ -20,6 +20,8 @@
 #define BM_MAP_SET(map, idx) (map[idx / 8] |= (1 << (idx % 8)))
 #define BM_MAP_RST(map, idx) (map[idx / 8] &= ~(1 << (idx % 8)))
 
+#define IDX_TO_ADDR(idx, baseAddr) (baseAddr + PAGE_SIZE * idx)
+
 uint16_t bootmem_init(const uint8_t *startAddr);
 void*    bootmem_alloc(const uint16_t numPages);
 

@@ -13,33 +13,18 @@
 
 #include "LibKern/Console.h"
 
+static volatile uint8_t *baseAddr = 0;
 static volatile uint8_t map[BM_MAP_SIZE] = {1};
-static volatile page_t pageList[BM_ARENA_SIZE] = {0};
 
 uint16_t bootmem_init(const uint8_t *startAddr)
 {
         uint16_t retValue = 0; /* Pages available */
-        uint8_t *alignedStart = 0;
 
-        alignedStart = (uint8_t*) PALIGN(startAddr);
-        
-        /* Initialize the pageList */
-        for (uint16_t i = 0; i < BM_ARENA_SIZE; i++) {
-                pageList[i].addr = alignedStart;
-                pageList[i].flags = 0;
-
-                alignedStart += PAGE_SIZE;
-                retValue++;
-        }
+        baseAddr = (uint8_t*) PALIGN(startAddr);
 
         /* Initialize the bitmap */
         for (uint16_t i = 0; i < BM_MAP_SIZE; i++) {
                 map[i] = 0;
-        }
-
-        /* Test it */
-        for (uint16_t i = 0; i < BM_ARENA_SIZE; i++) {
-                // klog("[bootmem] pageList[%u].addr: 0x%x\n", &i, &pageList[i].addr);
         }
 
         return retValue;
@@ -73,6 +58,7 @@ void* bootmem_alloc(const uint16_t numPages)
         void *retAddr = 0;
 
         for (uint16_t i = 0; i < BM_ARENA_SIZE; i++) {
+                /* Skip used areas */
                 if (BM_MAP_GET(map, i)) {
                         continue;
                 }
@@ -82,7 +68,7 @@ void* bootmem_alloc(const uint16_t numPages)
                 if (fits) {
                         bootmem_mark_used(i, i + numPages);
 
-                        retAddr = pageList[i].addr;
+                        retAddr = (void*) IDX_TO_ADDR(i, baseAddr);
                         
                         break;
                 }

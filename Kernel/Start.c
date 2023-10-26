@@ -29,7 +29,7 @@ void _halt(const char *s)
 void _fdt_check(void)
 {
         volatile uint32_t *address = (uint32_t*) DTB_START;
-        volatile uint32_t *magic = (uint32_t*) 0xEDFE0DD0; /* 0xDOODFEED */
+        volatile uint32_t magic = 0xEDFE0DD0; /* 0xDOODFEED */
 
         if (*address == magic) {
                 klog("DTB");
@@ -37,7 +37,7 @@ void _fdt_check(void)
                 _halt("DTB not");
         }
 
-        kprintf(" found at Physical Address: 0x%p\n", &address);
+        kprintf(" found at Physical Address: 0x%p\n", address);
 }
 
 void start(void)

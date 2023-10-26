@@ -21,7 +21,6 @@
 #include "Memory/PageDef.h"
 
 typedef struct block {
-        page_t *listHead;
         uint64_t *map;
 } block_t;
 
