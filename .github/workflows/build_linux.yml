@@ -35,7 +35,7 @@ jobs:
     
       - name: Build The Kernel
         run: |
-          make all
+          make kernel
 
       - name: Build The Tests
         run: |
