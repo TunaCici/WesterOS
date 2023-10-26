@@ -57,7 +57,7 @@ GTEST_SRCS = ${GTEST_DIR}/src/*.cc ${GTEST_DIR}/src/*.h ${GTEST_HEADERS}
 GTEST_LIBS = libgtest.a libgtest_main.a
 
 GTEST_CPPFLAGS = ${INCLUDES} -isystem ${GTEST_DIR}/include
-GTEST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -lc++ -std=c++20 \
+GTEST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -std=c++20 \
 	-Wno-unused-command-line-argument \
 	-dead_strip \
 # Flag: ^^^^^^^^^^^ removes "unused symbols". Not optimal, but it works >.<
