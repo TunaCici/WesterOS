@@ -82,6 +82,9 @@ void kmain(void)
                 klog("[kmain] bootmem_alloc FAIL\n");
         }
 
+        /* Initializa PMM */
+        init_allocator(kernelEnd, ramEnd);
+
         /* Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;) {

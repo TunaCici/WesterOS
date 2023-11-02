@@ -20,32 +20,26 @@
 
 #include "Memory/PageDef.h"
 
-typedef struct block {
-        uint64_t *map;
-} block_t;
+#define MARK_USED() ()
 
-typedef struct freeAreaStruct {
-        uint8_t *listHead;
-        /* TODO: How to keep track of freemem? */
-} freeArea_t;
+/* Used to 'address' blocks in a free_area_t (e.g. 0x4000 -> 0x8000) */
+/* Similar to the 'run' structure on xv6: */
+/*      https://github.com/mit-pdos/xv6-public/blob/master/kalloc.c */
+typedef struct list_head_struct {
+        struct list_head_struct* next;
+} list_head_t;
 
-/* TODO: Thing to answer before implementing shi': */
-/* TODO:        Which data structure? */
-/* TODO:        How to keep track of free PAGEs? */
-/* TODO:        Maybe a bitmap? Okay. definitely a bitmap. */
-/* TODO:        How to allocate space for the data structure itself? */
-/* TODO:        Can't use any static size like RAM_SIZE because reasons. */
-/* TODO:        Maybe 'calculate' needed space inside init_allocator()? */
-/* TODO:        Then skip that area like: startAddr + calcBuddyPoolSize? */
-/* TODO:        Is this a stupid design? Need more research and asking around */
-/* TODO:        See the below materials */
-/* TODO:        https://kernel.org/doc/html/v4.19/core-api/boot-time-mm.html */
-/* TODO:        http://halobates.de/memory.pdf */
-/* TODO:        https://kernel.org/doc/gorman/html/understand/ */
+typedef struct free_area_struct {
+        list_head_t listHead;
+} free_area_t;
 
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr);
 
-void* alloc_page(const uint32_t numPages);
-void* free_page(void *targetAddr, const uint32_t numPages);
+/* Allocate a single page / 2^order number of pages */
+void* alloc_page();
+void* alloc_pages(const uint32_t order);
+
+void free_page(void *targetAddr);
+void free_pages(void *targetAddr, const uint32_t order);
 
 #endif /* PHYSICAL_H */
