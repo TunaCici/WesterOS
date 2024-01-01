@@ -20,6 +20,7 @@
 
 #include "Memory/PageDef.h"
 
+#define SIZEOF_BLOCK(order) ((0x1 << (order)) * PAGE_SIZE ) 
 #define MARK_USED() ()
 
 /* Used to 'address' blocks in a free_area_t (e.g. 0x4000 -> 0x8000) */

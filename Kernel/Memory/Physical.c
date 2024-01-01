@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include "LibKern/Time.h"
 #include "Memory/PageDef.h"
 #include "Memory/Physical.h"
 
@@ -22,6 +23,7 @@
 
 /* Main buddy data structure */
 static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
+
 static volatile uint8_t *buddyMap = 0;
 static volatile uint32_t buddyMapSize = 0; /* bytes */
 
@@ -29,6 +31,17 @@ int ___count_free_pages(const unsigned int order) {
         int retValue = 0;
 
         return retValue; 
+}
+
+uint8_t* __buddy(const uint8_t* reference, const unsigned int order) {
+        uint8_t *retValue = 0;
+
+        klog("XOR with 0x%x\n", PAGE_SIZE << order);
+        klog("reference: 0x%lx\n", (uint64_t) reference);
+
+        retValue = (uint8_t*) ((uint64_t) reference ^ (PAGE_SIZE << order));
+
+        return retValue;
 }
 
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
@@ -59,7 +72,10 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
         klog("[Physical] buddyMap.end: 0x%p\n", buddyMap + buddyMapSize);
 
         /* Skip over buddyMap (in dire need of a "memory map") */
+        /* AND align to MAX_ORDER block. i don't know if this is ideal */
         alignedStart += ((buddyMapSize + PAGE_SIZE) / PAGE_SIZE) * PAGE_SIZE;
+        alignedStart = (void*) CUSTOM_ALIGN(alignedStart, (PAGE_SIZE << (MAX_ORDER - 1)));
+
         klog("[Physical] alignedStart: 0x%p\n", alignedStart);
 
         /* Explicitly mark all of buddyMap as 'free' */
@@ -67,7 +83,7 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
                 buddyMap[i] = 0x00;
         }
 
-        const uint32_t blockSize = (0x1 << (MAX_ORDER - 1)) * PAGE_SIZE;
+        const uint32_t blockSize = SIZEOF_BLOCK(MAX_ORDER - 1);
         const uint32_t moveBy = blockSize / 8; /* pointer arithmetics */
         
         /* Create the first freelist of 2^(MAX_ORDER - 1) blocks */
@@ -79,14 +95,25 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
                 } 
         }
 
+#ifdef DEBUG
         /* DEBUG: Traverse buddyPmm[MAX_ORDER - 1] */
         list_head_t *iter = buddyPmm[MAX_ORDER - 1].listHead.next;
         while (iter && iter->next) {
                 klog("Address of iter: 0x%p, value of iter->next: 0x%p\n", iter, iter->next);
                 iter = iter->next;
+                ksleep(2000);
         }
+#endif
 
-        klog("[Physical] Number of 2MiB blocks: %lu\n", retValue);
+        klog("[Physical] Number of 2 MiB blocks: %lu\n", retValue);
+
+        list_head_t *first = buddyPmm[MAX_ORDER - 1].listHead.next;
+
+        /* Basically split a buddy into two */
+        list_head_t *buddy1 = first;
+        list_head_t *buddy2 = (list_head_t*) __buddy((uint8_t*) buddy1, 8);
+
+        klog("Buddy1: 0x%p, Buddy2: 0x%p\n", buddy1, buddy2);
 
         return retValue;
 }
