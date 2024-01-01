@@ -1,3 +1,10 @@
+/*
+*	File: kernel.ld
+*	Author: Tuna CICI
+*	
+*	WesterOS kernel linker script.
+*/
+
 OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
 ENTRY(_start)

@@ -28,8 +28,6 @@ _start:
 
 	/* Paint a random register with a known value for DEBUG in QEMU */
 	# mov   x3, #0xab 
-
-
 1:
 	cmp     x1, x2
 	b.gt    2f
