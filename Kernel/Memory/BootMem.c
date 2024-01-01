@@ -14,7 +14,7 @@
 #include "LibKern/Console.h"
 
 static volatile uint8_t *baseAddr = 0;
-static volatile uint8_t map[BM_MAP_SIZE] = {1};
+static volatile uint8_t map[BM_MAP_SIZE] = {0};
 
 uint16_t bootmem_init(const uint8_t *startAddr)
 {
@@ -26,6 +26,8 @@ uint16_t bootmem_init(const uint8_t *startAddr)
         for (uint16_t i = 0; i < BM_MAP_SIZE; i++) {
                 map[i] = 0;
         }
+
+        retValue = BM_ARENA_SIZE;
 
         return retValue;
 }
