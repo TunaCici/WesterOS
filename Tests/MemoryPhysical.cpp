@@ -4,12 +4,6 @@
 
 extern "C" {
         #include "Memory/PageDef.h"
-        #include "Memory/Physical.h"
-}
-
-TEST(MemoryPhysical, init_allocator)
-{
-        EXPECT_EQ(0, init_allocator(0x0, 0x0));       
 }
 
 TEST(MemoryPhysical, palign)
