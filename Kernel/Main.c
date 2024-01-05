@@ -58,30 +58,6 @@ void kmain(void)
                 pageCount, freeBytes
         );
 
-        void *myArea = bootmem_alloc(64);
-
-        if (myArea) {
-                klog("[kmain] bootmem_alloc OK 0x%p\n", myArea);
-        } else {
-                klog("[kmain] bootmem_alloc FAIL\n");
-        }
-
-        void *myArea2 = bootmem_alloc(2048);
-
-        if (myArea2) {
-                klog("[kmain] bootmem_alloc OK 0x%p\n", myArea2);
-        } else {
-                klog("[kmain] bootmem_alloc FAIL\n");
-        }
-
-        void *myArea3 = bootmem_alloc(2077);
-
-        if (myArea3) {
-                klog("[kmain] bootmem_alloc OK 0x%p\n", myArea3);
-        } else {
-                klog("[kmain] bootmem_alloc FAIL\n");
-        }
-
         /* Initializa PMM */
         init_allocator(kernelEnd, ramEnd);
 
