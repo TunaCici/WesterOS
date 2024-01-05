@@ -13,7 +13,7 @@
 
 #include "Memory/PageDef.h"
 
-#define BM_ARENA_SIZE      4096 /* Pages */
+#define BM_ARENA_SIZE      512 /* Pages */
 #define BM_MAP_SIZE        (BM_ARENA_SIZE / 8) /* Cuz -> uint8_t */
 
 #define BM_MAP_GET(map, idx) (map[idx / 8] & (1 << (idx % 8)))
