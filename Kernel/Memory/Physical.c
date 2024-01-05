@@ -16,24 +16,17 @@
 #include <stdint.h>
 
 #include "LibKern/Time.h"
-#include "Memory/PageDef.h"
-#include "Memory/Physical.h"
-
 #include "LibKern/Console.h"
+
+#include "Memory/PageDef.h"
+#include "Memory/BootMem.h"
+#include "Memory/Physical.h"
 
 /* Main buddy data structure */
 static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
 
-static volatile uint8_t *buddyMap = 0;
-static volatile uint32_t buddyMapSize = 0; /* bytes */
-
-int ___count_free_pages(const unsigned int order) {
-        int retValue = 0;
-
-        return retValue; 
-}
-
-uint8_t* __buddy(const uint8_t* reference, const unsigned int order) {
+uint8_t* __buddy(const uint8_t* reference, const unsigned int order)
+{
         uint8_t *retValue = 0;
 
         klog("XOR with 0x%x\n", PAGE_SIZE << order);
@@ -54,45 +47,46 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
         klog("[Physical] startdAddr: 0x%p\n", startAddr);
         klog("[Physical] endAddr: 0x%p\n", endAddr);
 
-        /* Calculate the required buddyMapSize in bytes */
-        uint64_t numPages = (alignedEnd - alignedStart) / PAGE_SIZE;
-        buddyMapSize = (numPages / 2) / 8; /* 1 bit for a buddy pair */
-
-        klog("[Physical] Required no. of bytes for 'buddyMap': %u\n",
-                buddyMapSize
-        );
-        klog("[Physical] Required pages: %u\n", 
-                (buddyMapSize + PAGE_SIZE) / PAGE_SIZE
-        );
-
-        /* TODO: Use bootmem_alloc() here instead doing 'manual' allocation? */ 
-        buddyMap = alignedStart;
-
-        klog("[Physical] buddyMap.start: 0x%p\n", buddyMap);
-        klog("[Physical] buddyMap.end: 0x%p\n", buddyMap + buddyMapSize);
-
-        /* Skip over buddyMap (in dire need of a "memory map") */
-        /* AND align to MAX_ORDER block. i don't know if this is ideal */
-        alignedStart += ((buddyMapSize + PAGE_SIZE) / PAGE_SIZE) * PAGE_SIZE;
+        /* Align to MAX_ORDER block */
         alignedStart = (void*) CUSTOM_ALIGN(alignedStart, (PAGE_SIZE << (MAX_ORDER - 1)));
 
         klog("[Physical] alignedStart: 0x%p\n", alignedStart);
 
-        /* Explicitly mark all of buddyMap as 'free' */
-        for (uint32_t i = 0; i < buddyMapSize; i++) {
-                buddyMap[i] = 0x00;
-        }
-
-        const uint32_t blockSize = SIZEOF_BLOCK(MAX_ORDER - 1);
-        const uint32_t moveBy = blockSize / 8; /* pointer arithmetics */
+        const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 8; /* pointer arithmetics */
         
-        /* Create the first freelist of 2^(MAX_ORDER - 1) blocks */
+        /* Init 2^(MAX_ORDER - 1) blocks */
+        uint32_t maxOrderBlockCount = 0;
         buddyPmm[MAX_ORDER - 1].listHead.next = alignedStart;
         for (list_head_t *i = alignedStart; i < (list_head_t*) alignedEnd; i += moveBy) {
                 if ((i + moveBy) < (list_head_t*) alignedEnd) {
                         i->next = (i + moveBy);
-                        retValue++;
+                        maxOrderBlockCount++;
                 } 
+        }
+        buddyPmm[MAX_ORDER - 1].map = 0;
+
+        /* Init the rest of the blocks */
+        for (uint32_t i = 0; i < MAX_ORDER - 1; i++) {
+                uint32_t bitmapSize = 0; /* Bytes */
+
+                bitmapSize = maxOrderBlockCount << (MAX_ORDER - 1 - i); /* Bit */
+                bitmapSize = (bitmapSize + 7) & ~7; /* Align to uint8_t */
+                bitmapSize = bitmapSize / 8; /* To bytes */
+
+                uint32_t reqPages = (bitmapSize + PAGE_SIZE) / PAGE_SIZE;
+
+                buddyPmm[i].listHead.next = 0;
+                buddyPmm[i].map = (uint8_t*) bootmem_alloc(reqPages);
+
+                if (buddyPmm[i].map) {
+                        klog("[Physical] Alloc %u pages for 2^%u map OK (0x%p)\n",
+                                reqPages, i, buddyPmm[i].map
+                        );
+                } else {
+                        klog("[Physical] Alloc %u pages for 2^%u map FAIL\n",
+                                reqPages, i
+                        );
+                }
         }
 
 #ifdef DEBUG
@@ -105,7 +99,7 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
         }
 #endif
 
-        klog("[Physical] Number of 2 MiB blocks: %lu\n", retValue);
+        klog("[Physical] Number of 2 MiB blocks: %lu\n", maxOrderBlockCount);
 
         list_head_t *first = buddyPmm[MAX_ORDER - 1].listHead.next;
 

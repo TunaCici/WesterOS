@@ -20,7 +20,7 @@
 
 #include "Memory/PageDef.h"
 
-#define SIZEOF_BLOCK(order) ((0x1 << (order)) * PAGE_SIZE ) 
+#define SIZEOF_BLOCK(order) ((0x1 << (order)) * PAGE_SIZE ) /* Bytes */
 #define MARK_USED() ()
 
 /* Used to 'address' blocks in a free_area_t (e.g. 0x4000 -> 0x8000) */
@@ -32,6 +32,7 @@ typedef struct list_head_struct {
 
 typedef struct free_area_struct {
         list_head_t listHead;
+        uint8_t *map;
 } free_area_t;
 
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr);
