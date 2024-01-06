@@ -54,12 +54,30 @@ void kmain(void)
         uint64_t pageCount = bootmem_init(kernelEnd);
         uint64_t freeBytes = (pageCount * PAGE_SIZE) / 1024; /* KiB */
 
-        klog("[kmain] Amount of pages available: %lu (%lu KiB)\n",
+        klog("[kmain] Pages available: %lu (%lu KiB) in bootmem\n",
                 pageCount, freeBytes
         );
 
         /* Initializa PMM */
         init_allocator(kernelEnd, ramEnd);
+
+        for (int i = 0; i < MAX_ORDER; i++) {
+                void *tmp = alloc_pages(i);
+
+                if (tmp) {
+                        klog("[kmain] alloc_pages(%u) OK\n", i);
+                } else {
+                        klog("[kmain] alloc_pages(%u) FAIL\n", i);
+                }
+
+                pmm_klog_buddy();
+                ksleep(1000);
+
+                if (i + 1 == MAX_ORDER) {
+                        i = -1;
+                }
+        }
+        
 
         /* Do something weird */
         klog("[kmain] imma just sleep\n");

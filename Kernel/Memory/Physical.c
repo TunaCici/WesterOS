@@ -24,38 +24,63 @@
 
 /* Main buddy data structure */
 static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
+static volatile void *baseAddr = 0;
 
-uint8_t* __buddy(const uint8_t* reference, const unsigned int order)
+void __clear_page_area(uint8_t *startAddr, uint32_t count)
 {
-        uint8_t *retValue = 0;
+        uint8_t *iter = startAddr;
+        for (uint32_t i = 0; i < count; i += 8) {
+                *iter = 0x00;
+                iter++;
+        }
+}
 
-        klog("XOR with 0x%x\n", PAGE_SIZE << order);
-        klog("reference: 0x%lx\n", (uint64_t) reference);
+/* Assumes the memory pool is contiguous */
+uint64_t __addr_to_idx(const uint8_t *targetAddr, const uint32_t blockSize)
+{
+        return (targetAddr - (uint8_t*) baseAddr) / blockSize;
+}
 
-        retValue = (uint8_t*) ((uint64_t) reference ^ (PAGE_SIZE << order));
+list_head_t* __buddy(const uint8_t* reference, const unsigned int order)
+{
+        list_head_t *retValue = 0;
+
+        retValue = (list_head_t*) ((uint64_t) reference ^ (PAGE_SIZE << order));
 
         return retValue;
 }
 
+void __append_to_order(const unsigned int order, list_head_t *targetBlock)
+{
+        /* Append to head */
+        if (buddyPmm[order].listHead.next == 0) {
+                buddyPmm[order].listHead.next = targetBlock;
+                return;
+        }
+
+        /* Or to the end */
+        list_head_t *iter = buddyPmm[order].listHead.next;
+        while(iter->next) {
+                iter = iter->next;
+        }
+        iter->next = targetBlock;
+}
+
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
 {
-        uint64_t retValue = 0; /* number of pages that are free */
+        uint64_t retValue = 0; /* number of available MAX_ORDER - 1 blocks */
         
         void *alignedStart = (void*) PALIGN(startAddr);
         void *alignedEnd = (void*) PALIGN(endAddr - PAGE_SIZE + 1);
 
-        klog("[Physical] startdAddr: 0x%p\n", startAddr);
-        klog("[Physical] endAddr: 0x%p\n", endAddr);
-
         /* Align to MAX_ORDER block */
         alignedStart = (void*) CUSTOM_ALIGN(alignedStart, (PAGE_SIZE << (MAX_ORDER - 1)));
-
-        klog("[Physical] alignedStart: 0x%p\n", alignedStart);
+        baseAddr = alignedStart;
 
         const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 8; /* pointer arithmetics */
         
         /* Init 2^(MAX_ORDER - 1) blocks */
-        uint32_t maxOrderBlockCount = 0;
+        uint32_t maxOrderBlockCount = 1;
         buddyPmm[MAX_ORDER - 1].listHead.next = alignedStart;
         for (list_head_t *i = alignedStart; i < (list_head_t*) alignedEnd; i += moveBy) {
                 if ((i + moveBy) < (list_head_t*) alignedEnd) {
@@ -78,36 +103,137 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
                 buddyPmm[i].listHead.next = 0;
                 buddyPmm[i].map = (uint8_t*) bootmem_alloc(reqPages);
 
-                if (buddyPmm[i].map) {
-                        klog("[Physical] Alloc %u pages for 2^%u map OK (0x%p)\n",
-                                reqPages, i, buddyPmm[i].map
-                        );
-                } else {
-                        klog("[Physical] Alloc %u pages for 2^%u map FAIL\n",
-                                reqPages, i
-                        );
-                }
+                __clear_page_area(buddyPmm[i].map, reqPages);
         }
 
-#ifdef DEBUG
-        /* DEBUG: Traverse buddyPmm[MAX_ORDER - 1] */
-        list_head_t *iter = buddyPmm[MAX_ORDER - 1].listHead.next;
-        while (iter && iter->next) {
-                klog("Address of iter: 0x%p, value of iter->next: 0x%p\n", iter, iter->next);
-                iter = iter->next;
-                ksleep(2000);
-        }
-#endif
-
-        klog("[Physical] Number of 2 MiB blocks: %lu\n", maxOrderBlockCount);
-
-        list_head_t *first = buddyPmm[MAX_ORDER - 1].listHead.next;
-
-        /* Basically split a buddy into two */
-        list_head_t *buddy1 = first;
-        list_head_t *buddy2 = (list_head_t*) __buddy((uint8_t*) buddy1, 8);
-
-        klog("Buddy1: 0x%p, Buddy2: 0x%p\n", buddy1, buddy2);
+        retValue = maxOrderBlockCount;
 
         return retValue;
 }
+
+void* alloc_page()
+{
+        void *retAddr = 0;
+
+        return retAddr;
+}
+
+void* alloc_pages(const uint32_t order)
+{
+        if (MAX_ORDER <= order) {
+                klog("[pmm] can't allocate blocks larger than 2^(MAX_ORDER - 1)\n");
+                return 0;
+        }
+
+        klog("[pmm] allocate an 2^%u order block (%u bytes)\n", order, SIZEOF_BLOCK(order));
+
+        void *retAddr = 0;
+
+        /* Find block */
+        uint32_t startOrder = 0;
+        for (; startOrder < MAX_ORDER; startOrder++) {
+                if (SIZEOF_BLOCK(startOrder) < SIZEOF_BLOCK(order)) {
+                        klog("[pmm] order 2^%u size not enough. skip\n", startOrder);
+                        continue;
+                } else if (!buddyPmm[startOrder].listHead.next) {
+                        klog("[pmm] order 2^%u doesn't have free blocks. skip\n", startOrder);
+                        continue;
+                }
+
+                klog("[pmm] order 2^%u has free blocks. start here\n", startOrder);
+                break;
+        }
+
+        if (MAX_ORDER <= startOrder) {
+                klog("[pmm] no available free blocks. fail\n");
+                return 0;
+        }
+
+        /* Remove from list */
+        list_head_t *targetBlock = buddyPmm[startOrder].listHead.next;
+        buddyPmm[startOrder].listHead.next = targetBlock->next;
+        targetBlock->next = 0;
+
+        uint64_t targetBlockIdx = __addr_to_idx(
+                (uint8_t*) targetBlock, SIZEOF_BLOCK(startOrder)
+        );
+
+        klog("[pmm] target block: 0x%p (idx: %lu)\n",
+                targetBlock,
+                targetBlockIdx
+        );
+
+        uint32_t currOrder;
+        for (currOrder = startOrder; 0 <= currOrder; currOrder--) {
+                klog("[pmm] currOrder: %u\n", currOrder);
+
+                if (SIZEOF_BLOCK(currOrder) == SIZEOF_BLOCK(order)) {
+                        /* Perfect fit. allocate here */
+                        klog("[pmm] perfect fit for 2^%u. allocate\n", currOrder);
+
+                        /* Mark the allocated block as USED (if possible)  */
+                        if (currOrder < MAX_ORDER - 1) {
+                                uint64_t targetBlockIdx = __addr_to_idx(
+                                        (uint8_t*) targetBlock, SIZEOF_BLOCK(currOrder)
+                                );
+
+                                klog("[pmm] mark idx %lu in 2^%u as USED\n", targetBlockIdx, currOrder);
+
+                                BUDDY_MARK_USED(buddyPmm[currOrder].map, targetBlockIdx);
+                        }
+
+                        retAddr = (void*) targetBlock;
+                        break;
+                } else {
+                        /* Split */
+                        list_head_t *buddy = __buddy(
+                                (uint8_t*) targetBlock, currOrder - 1);
+                        klog("[pmm] split. targetBlock: 0x%p, it's buddy: 0x%p\n", targetBlock, buddy);
+        
+                        /* Mark the split block as USED (if possible) */
+                        if (currOrder < MAX_ORDER - 1) {
+                                uint64_t targetBlockIdx = __addr_to_idx(
+                                        (uint8_t*) targetBlock, SIZEOF_BLOCK(currOrder)
+                                );
+
+                                BUDDY_MARK_USED(buddyPmm[currOrder].map, targetBlockIdx);
+                        }
+
+                        /* Add buddy to ONE BELOW freelist */
+                        __append_to_order(currOrder - 1, buddy);
+                }
+        }
+
+        targetBlockIdx = __addr_to_idx(
+                (uint8_t*) retAddr, SIZEOF_BLOCK(currOrder)
+        );
+        
+        if (BUDDY_GET_MARK(buddyPmm[currOrder].map, targetBlockIdx)) {
+                klog("[pmm] allocate block 0x%p on 2^%u OK\n", retAddr, currOrder);
+        } else {
+                klog("[pmm] allocate block 0x%p on 2^%u FAIL\n", retAddr, currOrder);
+        }
+
+
+        return retAddr;
+}
+
+/* START DEBUG ONLY */
+
+void pmm_klog_buddy(void)
+{
+        for (uint32_t i = 0; i < MAX_ORDER; i++) {
+
+                klog("[pmm] buddyPmm[%u].listHead ", i);
+
+                uint32_t maxPrint = 3;
+                list_head_t *iter = buddyPmm[i].listHead.next;
+                while (iter && 0 < maxPrint--) {
+                        kprintf("0x%p -> 0x%p | ", iter, iter->next);
+                        iter = iter->next;
+                }
+                kprintf("\n");
+        } 
+}
+
+/* END DEBUG ONLY */

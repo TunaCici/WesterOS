@@ -21,7 +21,10 @@
 #include "Memory/PageDef.h"
 
 #define SIZEOF_BLOCK(order) ((0x1 << (order)) * PAGE_SIZE ) /* Bytes */
-#define MARK_USED() ()
+
+#define BUDDY_MARK_USED(map, idx) (map[idx / 8] |= (1 << (idx % 8)))
+#define BUDDY_MARK_FREE(map, idx) (map[idx / 8] &= ~(1 << (idx % 8)))
+#define BUDDY_GET_MARK(map, idx) (map[idx / 8] & (1 << (idx % 8)))
 
 /* Used to 'address' blocks in a free_area_t (e.g. 0x4000 -> 0x8000) */
 /* Similar to the 'run' structure on xv6: */
@@ -43,5 +46,9 @@ void* alloc_pages(const uint32_t order);
 
 void free_page(void *targetAddr);
 void free_pages(void *targetAddr, const uint32_t order);
+
+/* START DEBUG ONLY */
+void pmm_klog_buddy(void);
+/* END DEBUG ONLY */
 
 #endif /* PHYSICAL_H */
