@@ -279,15 +279,15 @@ void free_pages(void *targetAddr, const uint32_t order)
                 return;
         }
 
+        /* Mark as free */
+        BUDDY_MARK_FREE(buddyPmm[order].map, targetIdx);
+
         /* 2^(MAX_ORDER - 1) block don't coalese */
         if (order == (MAX_ORDER - 1)) {
                 klog("[pmm] 2^(MAX_ORDER - 1) block don't coalese. append\n");
                 __append_to_order(order, targetAddr);
                 return;
         }
-
-        /* Mark as free */
-        BUDDY_MARK_FREE(buddyPmm[order].map, targetIdx);
 
         /* Coalese? */
         for (uint32_t currOrder = order; currOrder < MAX_ORDER - 1; currOrder++) {
