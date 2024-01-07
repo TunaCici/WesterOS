@@ -52,18 +52,47 @@ list_head_t* __buddy(const uint8_t* reference, const unsigned int order)
 
 void __append_to_order(const unsigned int order, list_head_t *targetBlock)
 {
-        /* Append to head */
-        if (buddyPmm[order].listHead.next == 0) {
-                buddyPmm[order].listHead.next = targetBlock;
+        if (!targetBlock || MAX_ORDER <= order) {
                 return;
         }
 
-        /* Or to the end */
+        /* Append to head */
+        if (buddyPmm[order].listHead.next == 0) {
+                buddyPmm[order].listHead.next = targetBlock;
+                targetBlock->prev = 0;
+                return;
+        }
+
+        /* Or to the end (TODO: appending to head seems more efficient) */
         list_head_t *iter = buddyPmm[order].listHead.next;
         while(iter->next) {
                 iter = iter->next;
         }
         iter->next = targetBlock;
+
+        targetBlock->next = 0;
+        targetBlock->prev = iter;
+}
+
+void __remove_from_order(const unsigned int order, list_head_t *targetBlock)
+{
+        if (!targetBlock || MAX_ORDER <= order) {
+                return;
+        }
+
+        /* Remove from head */
+        if (!targetBlock->prev) {
+                buddyPmm[order].listHead.next = 0;
+                return;
+        }
+
+        /* Or somewhere else */
+        targetBlock->prev->next = targetBlock->next;
+        if (targetBlock->next) {
+                targetBlock->next->prev = targetBlock->prev;
+        }
+        targetBlock->next = 0;
+        targetBlock->prev = 0;
 }
 
 uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
@@ -79,18 +108,25 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
 
         const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 8; /* pointer arithmetics */
         
-        /* Init 2^(MAX_ORDER - 1) blocks */
-        uint32_t maxOrderBlockCount = 1;
+        /* Initialize 2^(MAX_ORDER - 1) blocks */
         buddyPmm[MAX_ORDER - 1].listHead.next = alignedStart;
+        buddyPmm[MAX_ORDER - 1].listHead.prev = 0;
+        buddyPmm[MAX_ORDER - 1].map = 0;
+
+        /* Add blocks to freeList */
+        uint32_t maxOrderBlockCount = 1;
+        list_head_t *prevBlock = 0;
         for (list_head_t *i = alignedStart; i < (list_head_t*) alignedEnd; i += moveBy) {
                 if ((i + moveBy) < (list_head_t*) alignedEnd) {
                         i->next = (i + moveBy);
+                        i->prev = prevBlock;
+
                         maxOrderBlockCount++;
+                        prevBlock = i;
                 } 
         }
-        buddyPmm[MAX_ORDER - 1].map = 0;
 
-        /* Init the rest of the blocks */
+        /* Initialize the rest of the blocks */
         for (uint32_t i = 0; i < MAX_ORDER - 1; i++) {
                 uint32_t bitmapSize = 0; /* Bytes */
 
@@ -101,6 +137,7 @@ uint64_t init_allocator(const uint8_t *startAddr, const uint8_t *endAddr)
                 uint32_t reqPages = (bitmapSize + PAGE_SIZE) / PAGE_SIZE;
 
                 buddyPmm[i].listHead.next = 0;
+                buddyPmm[i].listHead.prev = 0;
                 buddyPmm[i].map = (uint8_t*) bootmem_alloc(reqPages);
 
                 __clear_page_area(buddyPmm[i].map, reqPages);
@@ -152,7 +189,12 @@ void* alloc_pages(const uint32_t order)
         /* Remove from list */
         list_head_t *targetBlock = buddyPmm[startOrder].listHead.next;
         buddyPmm[startOrder].listHead.next = targetBlock->next;
+        if (buddyPmm[startOrder].listHead.next) {
+                buddyPmm[startOrder].listHead.next->prev = 0;
+        }
+
         targetBlock->next = 0;
+        targetBlock->prev = 0;
 
         uint64_t targetBlockIdx = __addr_to_idx(
                 (uint8_t*) targetBlock, SIZEOF_BLOCK(startOrder)

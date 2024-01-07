@@ -30,7 +30,8 @@
 /* Similar to the 'run' structure on xv6: */
 /*      https://github.com/mit-pdos/xv6-public/blob/master/kalloc.c */
 typedef struct list_head_struct {
-        struct list_head_struct* next;
+        struct list_head_struct *next;
+        struct list_head_struct *prev;
 } list_head_t;
 
 typedef struct free_area_struct {
