@@ -260,6 +260,57 @@ void* alloc_pages(const uint32_t order)
         return retAddr;
 }
 
+void free_page(void *targetAddr)
+{
+        return;
+}
+
+void free_pages(void *targetAddr, const uint32_t order)
+{
+        if (!targetAddr || MAX_ORDER <= order) {
+                klog("[pmm] target is NULL or order is larger then 2^(MAX_ORDER - 1). fail\n");
+                return;
+        }
+
+        uint64_t targetIdx = __addr_to_idx((uint8_t*) targetAddr, SIZEOF_BLOCK(order));
+
+        if (!BUDDY_GET_MARK(buddyPmm[order].map, targetIdx)) {
+                klog("[pmm] trying to free an empty area. fail\n");
+                return;
+        }
+
+        /* 2^(MAX_ORDER - 1) block don't coalese */
+        if (order == (MAX_ORDER - 1)) {
+                klog("[pmm] 2^(MAX_ORDER - 1) block don't coalese. append\n");
+                __append_to_order(order, targetAddr);
+                return;
+        }
+
+        /* Mark as free */
+        BUDDY_MARK_FREE(buddyPmm[order].map, targetIdx);
+
+        /* Coalese? */
+        for (uint32_t currOrder = order; currOrder < MAX_ORDER - 1; currOrder++) {
+                list_head_t *buddy = __buddy(targetAddr, currOrder);
+                uint64_t buddyIdx = __addr_to_idx((uint8_t*) buddy, SIZEOF_BLOCK(currOrder));
+
+                klog("[pmm] buddy 0x%p (idx: %lu, ord: %u)\n", buddy, buddyIdx, currOrder);
+
+                /* Coalese */
+                if (!BUDDY_GET_MARK(buddyPmm[currOrder].map, buddyIdx)) {
+                        klog("[pmm] buddy is free. coalese\n");
+
+                        __remove_from_order(currOrder, buddy);
+                        __append_to_order(currOrder + 1, targetAddr);
+                } else {
+                        klog("[pmm] buddy is not free. append to list\n");
+
+                        __append_to_order(currOrder, targetAddr);
+                        break;
+                }
+        }      
+}
+
 /* START DEBUG ONLY */
 
 void pmm_klog_buddy(void)
