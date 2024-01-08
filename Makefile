@@ -80,7 +80,7 @@ OBJS = ${SRCS:.c=.o}
 
 # Test source files (must be hardware-independent)
 TEST_SRCS = \
-	Tests/MemoryPhysical.cpp
+	Tests/MemoryPageDef.cpp
 TEST_OBJS := ${filter %.o, ${TEST_SRCS:.c=.o}}
 TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 
