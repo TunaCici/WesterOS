@@ -6,7 +6,7 @@ extern "C" {
         #include "Memory/PageDef.h"
 }
 
-TEST(MemoryPhysical, TODO)
+TEST(MemoryBootMem, TODO)
 {
 
 }
