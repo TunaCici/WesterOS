@@ -13,17 +13,17 @@
 
 #include "LibKern/Console.h"
 
-static volatile uint8_t *baseAddr = 0;
+static volatile void *baseAddr = 0;
 static volatile uint8_t map[BM_MAP_SIZE] = {0};
 
-uint16_t bootmem_init(const uint8_t *startAddr)
+uint32_t bootmem_init(const void *startAddr)
 {
-        uint16_t retValue = 0; /* Pages available */
+        uint32_t retValue = 0; /* Pages available */
 
-        baseAddr = (uint8_t*) PALIGN(startAddr);
+        baseAddr = (void*) PALIGN(startAddr);
 
         /* Initialize the bitmap */
-        for (uint16_t i = 0; i < BM_MAP_SIZE; i++) {
+        for (uint32_t i = 0; i < BM_MAP_SIZE; i++) {
                 map[i] = 0;
         }
 
@@ -48,18 +48,18 @@ uint8_t bootmem_calc_fitting(const uint32_t startIdx, const uint32_t numPages)
         return 1;
 }
 
-void bootmem_mark_used(const uint16_t startIdx, const uint16_t endIdx)
+void bootmem_mark_used(const uint32_t startIdx, const uint16_t endIdx)
 {
-        for (uint16_t i = startIdx; i < endIdx; i++) {
+        for (uint32_t i = startIdx; i < endIdx; i++) {
                 BM_MAP_SET(map, i);
         }
 }
 
-void* bootmem_alloc(const uint16_t numPages)
+void* bootmem_alloc(const uint32_t numPages)
 {
         void *retAddr = 0;
 
-        for (uint16_t i = 0; i < BM_ARENA_SIZE; i++) {
+        for (uint32_t i = 0; i < BM_ARENA_SIZE; i++) {
                 /* Skip used areas */
                 if (BM_MAP_GET(map, i)) {
                         continue;
@@ -70,7 +70,7 @@ void* bootmem_alloc(const uint16_t numPages)
                 if (fits) {
                         bootmem_mark_used(i, i + numPages);
 
-                        retAddr = (void*) IDX_TO_ADDR(i, baseAddr);
+                        retAddr = (void*) BM_IDX_TO_ADDR(i, baseAddr);
                         
                         break;
                 }
@@ -83,8 +83,8 @@ void* bootmem_alloc(const uint16_t numPages)
 
 void bootmem_klog_map(void) 
 {
-        for (uint16_t i = 0; i < BM_MAP_SIZE; i++) {
-                klog("[bootmem] map[%u]: 0x%x\n", i, map[i]);
+        for (uint32_t i = 0; i < BM_MAP_SIZE; i++) {
+                KLOG("[bootmem] map[%u]: 0x%x\n", i, map[i]);
         }
 }
 
