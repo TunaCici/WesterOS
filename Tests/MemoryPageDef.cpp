@@ -17,7 +17,7 @@ TEST(MemoryPageDef, PALIGN)
         someAddr = (uint8_t*) 0x1;
         EXPECT_EQ(PAGE_SIZE, PALIGN(someAddr));
 
-        /* PAGE_SIZE aligns to PAGE_SIZE*/
+        /* PAGE_SIZE aligns to PAGE_SIZE */
         someAddr = (uint8_t*) PAGE_SIZE;
         EXPECT_EQ(PAGE_SIZE, PALIGN(someAddr));
 
@@ -41,7 +41,7 @@ TEST(MemoryPageDef, CUSTOM_ALIGN)
         someAddr = (uint8_t*) 0x1;
         EXPECT_EQ(ALLIGNMENT, CUSTOM_ALIGN(someAddr, ALLIGNMENT));
 
-        /* ALLIGNMENT aligns to ALLIGNMENT*/
+        /* ALLIGNMENT aligns to ALLIGNMENT */
         someAddr = (uint8_t*) ALLIGNMENT;
         EXPECT_EQ(ALLIGNMENT, CUSTOM_ALIGN(someAddr, ALLIGNMENT));
 
