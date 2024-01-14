@@ -16,6 +16,29 @@
 static volatile void *baseAddr = 0;
 static volatile uint8_t map[BM_MAP_SIZE] = {0};
 
+uint8_t __calc_fitting(const uint32_t startIdx, const uint32_t numPages)
+{
+        if (BM_ARENA_SIZE < startIdx + numPages) {
+                return 0;
+        }
+
+        for (uint32_t i = 0; i < numPages; i++) {
+                if (BM_MAP_GET(map, startIdx + i) == 1) {
+                        /* it doesn't fit :( */
+                        return 0;
+                }
+        }
+
+        return 1;
+}
+
+void __mark_used(const uint32_t startIdx, const uint16_t endIdx)
+{
+        for (uint32_t i = startIdx; i < endIdx; i++) {
+                BM_MAP_SET(map, i);
+        }
+}
+
 uint32_t bootmem_init(const void *startAddr)
 {
         uint32_t retValue = 0; /* Pages available */
@@ -32,32 +55,13 @@ uint32_t bootmem_init(const void *startAddr)
         return retValue;
 }
 
-uint8_t bootmem_calc_fitting(const uint32_t startIdx, const uint32_t numPages)
-{
-        if (BM_ARENA_SIZE < startIdx + numPages) {
-                return 0;
-        }
-
-        for (uint32_t i = 0; i < numPages; i++) {
-                if (BM_MAP_GET(map, startIdx + i) == 1) {
-                        /* it doesn't fit :( */
-                        return 0;
-                }
-        }
-
-        return 1;
-}
-
-void bootmem_mark_used(const uint32_t startIdx, const uint16_t endIdx)
-{
-        for (uint32_t i = startIdx; i < endIdx; i++) {
-                BM_MAP_SET(map, i);
-        }
-}
-
 void* bootmem_alloc(const uint32_t numPages)
 {
         void *retAddr = 0;
+
+        if (numPages == 0 || BM_ARENA_SIZE < numPages) {
+                return retAddr;
+        }
 
         for (uint32_t i = 0; i < BM_ARENA_SIZE; i++) {
                 /* Skip used areas */
@@ -65,10 +69,10 @@ void* bootmem_alloc(const uint32_t numPages)
                         continue;
                 }
 
-                uint8_t fits = bootmem_calc_fitting(i, numPages);
+                uint8_t fits = __calc_fitting(i, numPages);
 
                 if (fits) {
-                        bootmem_mark_used(i, i + numPages);
+                        __mark_used(i, i + numPages);
 
                         retAddr = (void*) BM_IDX_TO_ADDR(i, baseAddr);
                         
