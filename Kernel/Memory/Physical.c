@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 
-#include "LibKern/Time.h"
 #include "LibKern/Console.h"
 
 #include "Memory/PageDef.h"
@@ -23,8 +22,8 @@
 #include "Memory/Physical.h"
 
 /* Main buddy data structure */
-static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
 static volatile void *baseAddr = 0;
+static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
 
 void __clear_page_area(uint8_t *addr, uint32_t size)
 {
@@ -107,19 +106,17 @@ void __remove_from_order(list_head_t *block, const uint32_t order)
         block->prev = 0;
 }
 
-uint64_t init_allocator(const uint8_t *start, const uint8_t *end)
+uint64_t init_allocator(const void *start, const void *end)
 {
         uint64_t retValue = 0; /* number of available MAX_ORDER - 1 blocks */
         
-        list_head_t *alignedStart = (void*) PALIGN(start);
-        list_head_t *alignedEnd = (void*) PALIGN(end - PAGE_SIZE + 1);
+        list_head_t *alignedStart = (list_head_t*) PALIGN((uint8_t*) start);
+        list_head_t *alignedEnd = (list_head_t*) PALIGN((uint8_t*) end - PAGE_SIZE + 1);
 
         /* Align to MAX_ORDER block */
         alignedStart = (list_head_t*) CUSTOM_ALIGN(alignedStart,
                 (PAGE_SIZE << (MAX_ORDER - 1)));
         baseAddr = alignedStart;
-
-        const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 8; /* ptr arith */
         
         /* Initialize 2^(MAX_ORDER - 1) blocks */
         buddyPmm[MAX_ORDER - 1].listHead.next = alignedStart;
@@ -129,6 +126,8 @@ uint64_t init_allocator(const uint8_t *start, const uint8_t *end)
         /* Add blocks to freeList */
         uint64_t blockCount = 1;
         list_head_t *prevBlock = 0;
+        const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 16; /* ptr arith */
+
         for (list_head_t *i = alignedStart; i < alignedEnd; i += moveBy) {
                 if ((i + moveBy) < alignedEnd) {
                         i->next = (i + moveBy);

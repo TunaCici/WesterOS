@@ -39,14 +39,14 @@ typedef struct free_area_struct {
         uint8_t *map;
 } free_area_t;
 
-uint64_t init_allocator(const uint8_t *start, const uint8_t *end);
+uint64_t init_allocator(const void *start, const void *end);
 
 /* Allocate a single page / 2^order number of pages */
 void* alloc_page();
 void* alloc_pages(const uint32_t order);
 
 void free_page(void *addr);
-void free_pages(void *targetAddr, const uint32_t order);
+void free_pages(void *addr, const uint32_t order);
 
 /* START DEBUG ONLY */
 void pmm_klog_buddy(void);
