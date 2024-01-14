@@ -52,14 +52,22 @@ void kmain(void)
         klog("[kmain] Initializing early memory manager...\n");
 
         uint64_t pageCount = bootmem_init(kernelEnd);
-        uint64_t freeBytes = (pageCount * PAGE_SIZE) / 1024; /* KiB */
 
         klog("[kmain] Pages available: %lu (%lu KiB) in bootmem\n",
-                pageCount, freeBytes
+                pageCount, (pageCount * PAGE_SIZE) / 1024
         );
 
         /* Initializa PMM */
-        init_allocator(kernelEnd, ramEnd);
+        klog("[kmain] Initializing physical memory manager...\n");
+
+        uint64_t blockCount = init_allocator(
+                kernelEnd + pageCount * PAGE_SIZE,
+                ramEnd
+        );
+
+        klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
+                blockCount, blockCount * 2
+        );
 
         uint32_t i = 0;
         void *tmp = alloc_pages(i);
