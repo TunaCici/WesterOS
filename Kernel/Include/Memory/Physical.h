@@ -41,6 +41,14 @@ typedef struct free_area_struct {
 
 uint64_t init_allocator(const void *start, const void *end);
 
+/* Private functions - TEST ONLY */
+void __clear_page_area(uint8_t *addr, uint32_t size);
+uint64_t __block_to_idx(const list_head_t *block, const uint32_t order);
+list_head_t* __buddy(const list_head_t *block, const uint32_t order);
+void __try_to_mark(list_head_t *block, const uint32_t order);
+void __append_to_order(list_head_t *block, const uint32_t order);
+void __remove_from_order(list_head_t *block, const uint32_t order);
+
 /* Allocate a single page / 2^order number of pages */
 void* alloc_page();
 void* alloc_pages(const uint32_t order);
