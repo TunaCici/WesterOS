@@ -43,8 +43,8 @@ INCLUDES = \
 	-I Tests/googletest/googletest/include
 CCFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -O2 -DDEBUG
 CXXFLAGS = ${INCLUDES} -Wall -Wextra -ffreestanding -nostdlib -std=c++20 -O2 -DDEBUG
-HOST_CCFLAGS = ${INCLUDES} -Wall -Wextra -std=gnu99 -g
-HOST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -std=c++20 -g
+HOST_CCFLAGS = ${INCLUDES} -Wall -Wextra -std=gnu99 -g -m64
+HOST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -std=c++20 -g -m64
 
 # QEMU
 QEMU_SCRIPT = Emulation/launch-qemu.sh
@@ -82,7 +82,9 @@ OBJS = ${SRCS:.c=.o}
 TEST_SRCS = \
 	Tests/MemoryPageDef.cpp \
 	Kernel/Memory/BootMem.c \
-	Tests/MemoryBootMem.cpp
+	Tests/MemoryBootMem.cpp \
+	Kernel/Memory/Physical.c \
+	Tests/MemoryPhysical.cpp
 TEST_OBJS := ${filter %.o, ${TEST_SRCS:.c=.o}}
 TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 
