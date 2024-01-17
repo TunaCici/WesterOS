@@ -1,9 +1,6 @@
-#include <_types/_uint64_t.h>
-#include <_types/_uint8_t.h>
-#include <stdint.h>
-
 #include "gtest/gtest.h"
-#include <sys/types.h>
+
+#include <cstdint>
 
 extern "C" {
         #include "Memory/PageDef.h"
