@@ -27,10 +27,8 @@ static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
 
 void __clear_page_area(uint8_t *addr, uint32_t size)
 {
-        uint8_t *iter = addr;
-        for (uint32_t i = 0; i < size; i += 8) {
-                *iter = 0x00;
-                iter++;
+        for (uint32_t i = 0; i < size; i++) {
+                addr[i] = 0x00;
         }
 }
 
@@ -115,7 +113,13 @@ uint64_t init_allocator(const void *start, const void *end)
 
         /* Align to MAX_ORDER block */
         alignedStart = (list_head_t*) CUSTOM_ALIGN(alignedStart,
-                (PAGE_SIZE << (MAX_ORDER - 1)));
+                SIZEOF_BLOCK(MAX_ORDER - 1));
+
+        /* At least one MAX_ORDER - 1 must exist! */
+        if ((uint8_t*) alignedEnd - (uint8_t*) alignedStart < SIZEOF_BLOCK(MAX_ORDER - 1)) {
+                return 0;
+        } 
+
         baseAddr = alignedStart;
         
         /* Initialize 2^(MAX_ORDER - 1) blocks */
