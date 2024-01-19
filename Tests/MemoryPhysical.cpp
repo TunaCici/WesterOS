@@ -13,7 +13,7 @@ extern "C" {
 /* With `new` we might NOT get a 2 MiB aligned addr (e.g. 0x200001)           */
 /* PMM aligns the start addr to 2 MiB. so, i need to account for misalignment */
 /* Allocating one (1) extra block helps solve this issue                      */
-/* But this time, If `new` gives us 2 MiB aligned addr, PMM inits 5x blocks   */
+/* But this time, If `new` gives us an aligned addr, PMM inits 5x blocks      */
 /* I want a deterministic results (4x blocks). Substricting one (1) helps it  */
 #define TEST_PM_PLAYGROUND_SIZE 5 * SIZEOF_BLOCK(MAX_ORDER - 1) - 1
 
@@ -63,6 +63,10 @@ TEST(MemoryPhysical, init)
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
                 playground[i] = 0;
         }
+
+        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
+        playground = (uint8_t*) CUSTOM_ALIGN(playground,
+               SIZEOF_BLOCK(MAX_ORDER - 1));
 
         /* Minimum size allowed (1 block) */
         blockCount = init_allocator(
