@@ -118,7 +118,7 @@ uint64_t init_allocator(const void *start, const void *end)
         /* At least one MAX_ORDER - 1 must exist! */
         if ((uint8_t*) alignedEnd - (uint8_t*) alignedStart < SIZEOF_BLOCK(MAX_ORDER - 1)) {
                 return 0;
-        } 
+        }
 
         baseAddr = alignedStart;
         
@@ -128,12 +128,12 @@ uint64_t init_allocator(const void *start, const void *end)
         buddyPmm[MAX_ORDER - 1].map = 0;
 
         /* Add blocks to freeList */
-        uint64_t blockCount = 1;
+        uint64_t blockCount = 0;
         list_head_t *prevBlock = 0;
         const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 16; /* ptr arith */
 
         for (list_head_t *i = alignedStart; i < alignedEnd; i += moveBy) {
-                if ((i + moveBy) < alignedEnd) {
+                if ((i + moveBy) <= alignedEnd) {
                         i->next = (i + moveBy);
                         i->prev = prevBlock;
 
