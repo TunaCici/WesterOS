@@ -168,3 +168,63 @@ TEST(MemoryPhysical, alloc_page)
         uint8_t *page = (uint8_t*) alloc_page();
         EXPECT_TRUE(page == 0);
 }
+
+TEST(MemoryPhysical, alloc_pages)
+{
+        /* Bootmem is required */
+        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
+        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
+                bootmem_area[i] = 0;
+        }
+        bootmem_init((void*) bootmem_area);
+
+        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
+        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
+                playground[i] = 0;
+        }
+
+        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
+        playground = (uint8_t*) CUSTOM_ALIGN(playground,
+               SIZEOF_BLOCK(MAX_ORDER - 1));
+
+        uint64_t blockCount = init_allocator(
+                playground,
+                playground + TEST_PM_PLAYGROUND_SIZE
+        );
+
+        /* Alloc 2 of each order (2 is just an arbitrary number) */
+        std::vector<uint8_t*> allocs = {};
+
+        for (auto i = MAX_ORDER - 1; 0 <= i; i--) {
+                uint8_t *block1 = (uint8_t*) alloc_pages(i);
+                uint8_t *block2 = (uint8_t*) alloc_pages(i);
+
+                EXPECT_TRUE(block1 != 0);
+                EXPECT_TRUE(block2 != 0);
+
+                /* Write random value */
+                for (auto j = 0; j < SIZEOF_BLOCK(i); j++) {
+                        block1[j] = j % 256;
+                        block2[j] = j % 256;
+                }
+
+                allocs.push_back(block1);
+                allocs.push_back(block2);
+        }
+
+        /* Read values */
+        auto readOrder = MAX_ORDER - 1;
+        auto toggle = 1;
+        for (auto block : allocs) {
+                for (auto i = 0; i < SIZEOF_BLOCK(readOrder); i++) {
+                        EXPECT_EQ(block[i], i % 256);
+                }
+
+                /* Skip to next 'readOrder' after 2 consecutive blocks */
+                toggle++;
+                if (toggle % 3 == 0) {
+                        toggle = 1;
+                        readOrder--;
+                }
+        }
+}
