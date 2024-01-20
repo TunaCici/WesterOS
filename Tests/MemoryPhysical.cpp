@@ -159,12 +159,12 @@ TEST(MemoryPhysical, alloc_page)
 
         /* Read values */
         for (auto page : allocs) {
-                for (auto j = 0; j < PAGE_SIZE; j++) {
-                        EXPECT_EQ(page[j], j % 256);
+                for (auto i = 0; i < PAGE_SIZE; i++) {
+                        EXPECT_EQ(page[i], i % 256);
                 }
         }
 
         /* No available space left at this point */
         uint8_t *page = (uint8_t*) alloc_page();
-        EXPECT_EQ(page, (uint8_t*) 0);
+        EXPECT_TRUE(page == 0);
 }

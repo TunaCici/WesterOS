@@ -32,11 +32,12 @@ TEST(MemoryBootMem, alloc)
 
         /* stupid request - 0 */
         void *tmp = bootmem_alloc(0);
-        EXPECT_EQ(tmp, (void*) 0);
+        EXPECT_TRUE(tmp == 0);
+
 
         /* more than what's allowed */
         tmp = bootmem_alloc(BM_ARENA_SIZE + 1);
-        EXPECT_EQ(tmp, (void*) 0);
+        EXPECT_TRUE(tmp == 0);
 
         /* simple */
         tmp = bootmem_alloc(1);
@@ -54,7 +55,7 @@ TEST(MemoryBootMem, alloc)
 
         /* no more space;( */
         tmp = bootmem_alloc(1);
-        EXPECT_EQ(tmp, (void*) 0);
+        EXPECT_TRUE(tmp == 0);
 
         /* addresses are valid? */
         for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
