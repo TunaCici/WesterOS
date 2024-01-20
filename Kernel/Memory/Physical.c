@@ -239,15 +239,6 @@ void* alloc_pages(const uint32_t order)
                 }
         }
 
-        idx = __block_to_idx(retAddr, currOrder);
-        
-        if (BUDDY_GET_MARK(buddyPmm[currOrder].map, idx)) {
-                KLOG("[pmm] allocate block 0x%p on 2^%u OK\n", retAddr, currOrder);
-        } else {
-                KLOG("[pmm] allocate block 0x%p on 2^%u FAIL\n", retAddr, currOrder);
-        }
-
-
         return retAddr;
 }
 
