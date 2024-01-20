@@ -100,10 +100,13 @@ void __remove_from_order(list_head_t *block, const uint32_t order)
         if (block->next) {
                 block->next->prev = block->prev;
         }
+        
         block->next = 0;
         block->prev = 0;
 }
 
+
+/* TODO: Getting uglier... Refactor needed */
 uint64_t init_allocator(const void *start, const void *end)
 {
         uint64_t retValue = 0; /* number of available MAX_ORDER - 1 blocks */
@@ -128,12 +131,12 @@ uint64_t init_allocator(const void *start, const void *end)
         buddyPmm[MAX_ORDER - 1].map = 0;
 
         /* Add blocks to freeList */
-        uint64_t blockCount = 0;
+        uint64_t blockCount = 1;
         list_head_t *prevBlock = 0;
         const uint32_t moveBy = SIZEOF_BLOCK(MAX_ORDER - 1) / 16; /* ptr arith */
 
         for (list_head_t *i = alignedStart; i < alignedEnd; i += moveBy) {
-                if ((i + moveBy) <= alignedEnd) {
+                if ((i + 2 * moveBy - 1) < alignedEnd) {
                         i->next = (i + moveBy);
                         i->prev = prevBlock;
 
