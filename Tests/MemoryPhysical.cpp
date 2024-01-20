@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <cstdint>
+#include <vector>
 
 extern "C" {
         #include "Memory/PageDef.h"
@@ -98,14 +99,14 @@ TEST(MemoryPhysical, __block_to_idx)
                 playground[i] = 0;
         }
 
+        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
+        playground = (uint8_t*) CUSTOM_ALIGN(playground,
+               SIZEOF_BLOCK(MAX_ORDER - 1));
+
         uint64_t blockCount = init_allocator(
                 playground,
                 playground + TEST_PM_PLAYGROUND_SIZE
         );
-
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
 
         for (auto i = 0; i < blockCount; i++) {
                 uint64_t idx = __block_to_idx(
@@ -114,4 +115,56 @@ TEST(MemoryPhysical, __block_to_idx)
                 );
                 EXPECT_EQ(idx, i);
         }
+}
+
+TEST(MemoryPhysical, alloc_page)
+{
+        /* Bootmem is required */
+        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
+        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
+                bootmem_area[i] = 0;
+        }
+        bootmem_init((void*) bootmem_area);
+
+        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
+        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
+                playground[i] = 0;
+        }
+
+        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
+        playground = (uint8_t*) CUSTOM_ALIGN(playground,
+               SIZEOF_BLOCK(MAX_ORDER - 1));
+
+        uint64_t blockCount = init_allocator(
+                playground,
+                playground + TEST_PM_PLAYGROUND_SIZE
+        );
+
+        std::vector<uint8_t*> allocs = {};
+        auto pagesCount = blockCount * SIZEOF_BLOCK(MAX_ORDER - 1) / PAGE_SIZE;
+        EXPECT_EQ(pagesCount, 2048); /* 8 MiB == 2048 * PAGE_SIZE */
+
+        /* Allocate single pages */
+        for (auto i = 0; i < pagesCount; i++) {
+                uint8_t *page = (uint8_t*) alloc_page();
+                EXPECT_EQ(page, playground + i * PAGE_SIZE);
+
+                /* Write random value */
+                for (auto j = 0; j < PAGE_SIZE; j++) {
+                        page[j] = j % 256;
+                }
+
+                allocs.push_back(page);
+        }
+
+        /* Read values */
+        for (auto page : allocs) {
+                for (auto j = 0; j < PAGE_SIZE; j++) {
+                        EXPECT_EQ(page[j], j % 256);
+                }
+        }
+
+        /* No available space left at this point */
+        uint8_t *page = (uint8_t*) alloc_page();
+        EXPECT_EQ(page, (uint8_t*) 0);
 }
