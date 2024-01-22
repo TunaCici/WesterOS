@@ -47,12 +47,6 @@ TEST(MemoryPhysical, __budy)
 
 TEST(MemoryPhysical, init)
 {
-        /* Less than SIZEOF(MAX_ORDER - 1) is not allowed */
-        uint64_t blockCount = init_allocator(
-                0x0, (void*) (SIZEOF_BLOCK(MAX_ORDER - 1) - 1)
-        );
-        EXPECT_EQ(blockCount, 0);
-
         /* Bootmem is required */
         uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
         for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
@@ -68,6 +62,13 @@ TEST(MemoryPhysical, init)
         /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
         playground = (uint8_t*) CUSTOM_ALIGN(playground,
                SIZEOF_BLOCK(MAX_ORDER - 1));
+
+        /* Less than SIZEOF(MAX_ORDER - 1) is not allowed */
+        uint64_t blockCount = init_allocator(
+                0x0, 
+                (void*) (SIZEOF_BLOCK(MAX_ORDER - 1) - 1)
+        );
+        EXPECT_EQ(blockCount, 0);
 
         /* Minimum size allowed (1 block) */
         blockCount = init_allocator(
@@ -226,5 +227,71 @@ TEST(MemoryPhysical, alloc_pages)
                         toggle = 1;
                         readOrder--;
                 }
+        }
+}
+
+TEST(MemoryPhysical, free_page)
+{
+        /* Bootmem is required */
+        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
+        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
+                bootmem_area[i] = 0;
+        }
+        bootmem_init((void*) bootmem_area);
+
+        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
+        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
+                playground[i] = 0;
+        }
+
+        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
+        playground = (uint8_t*) CUSTOM_ALIGN(playground,
+               SIZEOF_BLOCK(MAX_ORDER - 1));
+
+        uint64_t blockCount = init_allocator(
+                playground,
+                playground + TEST_PM_PLAYGROUND_SIZE
+        );
+
+        std::vector<uint8_t*> allocs1 = {};
+        std::vector<uint8_t*> allocs2 = {};
+
+        auto pagesCount = blockCount * SIZEOF_BLOCK(MAX_ORDER - 1) / PAGE_SIZE;
+        EXPECT_EQ(pagesCount, 2048); /* 8 MiB == 2048 * PAGE_SIZE */
+
+        /* Allocate single pages */
+        for (auto i = 0; i < pagesCount; i++) {
+                uint8_t *page = (uint8_t*) alloc_page();
+                EXPECT_EQ(page, playground + i * PAGE_SIZE);
+
+                /* Write random value */
+                for (auto j = 0; j < PAGE_SIZE; j++) {
+                        page[j] = j % 256;
+                }
+
+                allocs1.push_back(page);
+        }
+
+        /* Free them */
+        for (auto page : allocs1) {
+                free_page(page);
+        }
+
+        /* Allocate again */
+        for (auto i = 0; i < pagesCount; i++) {
+                uint8_t *page = (uint8_t*) alloc_page();
+                EXPECT_EQ(page, playground + i * PAGE_SIZE);
+
+                /* Write random value */
+                for (auto j = 0; j < PAGE_SIZE; j++) {
+                        page[j] = j % 256;
+                }
+
+                allocs2.push_back(page);
+        }
+
+        /* Should be the same addresses */
+        for (auto i = 0; i < pagesCount; i++) {
+                EXPECT_EQ(allocs1[i], allocs2[i]);
         }
 }
