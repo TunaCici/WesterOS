@@ -68,7 +68,9 @@ void __append_to_order(list_head_t *block, const uint32_t order)
         /* Append to head */
         if (buddyPmm[order].listHead.next == 0) {
                 buddyPmm[order].listHead.next = block;
+                block->next = 0;
                 block->prev = 0;
+                
                 return;
         }
 
@@ -103,6 +105,30 @@ void __remove_from_order(list_head_t *block, const uint32_t order)
         
         block->next = 0;
         block->prev = 0;
+}
+
+list_head_t* __try_coalescing(list_head_t* block, const uint32_t order)
+{
+        list_head_t* retValue = 0; /* Coalesed block */
+
+        list_head_t* buddy = __buddy(block, order);
+
+        uint64_t idx = __block_to_idx(block, order);
+        uint64_t buddyIdx = __block_to_idx(buddy, order);
+
+        /* Coalese */
+        if (!BUDDY_GET_MARK(buddyPmm[order].map, buddyIdx)) {
+                KLOG("[pmm] buddy is free. coalese\n");
+ 
+                __remove_from_order(buddy, order);
+
+                list_head_t *left = idx < buddyIdx ? block : buddy;
+                __append_to_order(left, order + 1); 
+
+                retValue = left;
+        }
+
+        return retValue;
 }
 
 
@@ -261,32 +287,39 @@ void free_pages(void *addr, const uint32_t order)
                 return;
         }
 
-        BUDDY_MARK_FREE(buddyPmm[order].map, idx);
-
         /* 2^(MAX_ORDER - 1) block don't coalese */
         if (order == (MAX_ORDER - 1)) {
                 KLOG("[pmm] 2^(MAX_ORDER - 1) block don't coalese. append\n");
-                __append_to_order(addr, idx);
+                __append_to_order(addr, order);
                 return;
         }
 
-        /* Coalese? */
+        list_head_t *buddy = __buddy(addr, order);
+        uint64_t buddyIdx = __block_to_idx(buddy, order);
+
+        /* Coalesce chain start? */
+        if (BUDDY_GET_MARK(buddyPmm[order].map, buddyIdx)) {
+                KLOG("[pmm] buddy is not free. append to list\n");
+
+                __append_to_order(addr, order);
+
+                BUDDY_MARK_FREE(buddyPmm[order].map, idx);
+
+                return;
+        }
+
+
+        /* Coalesce chain start */
         for (uint32_t curr = order; curr < MAX_ORDER - 1; curr++) {
-                list_head_t *buddy = __buddy(addr, curr);
-                uint64_t buddyIdx = __block_to_idx(addr, curr);
+                list_head_t *coalescedBlk = __try_coalescing(addr, curr);
 
-                KLOG("[pmm] buddy 0x%p (idx: %lu, ord: %u)\n", buddy, buddyIdx, curr);
-
-                /* Coalese */
-                if (!BUDDY_GET_MARK(buddyPmm[curr].map, buddyIdx)) {
-                        KLOG("[pmm] buddy is free. coalese\n");
-
-                        __remove_from_order(buddy, curr);
-                        __append_to_order(addr, curr + 1);
+                if (coalescedBlk && (curr + 1 < MAX_ORDER - 1)) {
+                        BUDDY_MARK_FREE(
+                                buddyPmm[curr + 1].map,
+                                __block_to_idx(coalescedBlk, curr + 1)
+                        );
+                        addr = coalescedBlk;
                 } else {
-                        KLOG("[pmm] buddy is not free. append to list\n");
-
-                        __append_to_order(addr, curr);
                         break;
                 }
         }      
