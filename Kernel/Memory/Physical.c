@@ -282,11 +282,6 @@ void free_pages(void *addr, const uint32_t order)
 
         uint64_t idx = __block_to_idx(addr, order);
 
-        if (!BUDDY_GET_MARK(buddyPmm[order].map, idx)) {
-                KLOG("[pmm] trying to free an empty area. fail\n");
-                return;
-        }
-
         /* 2^(MAX_ORDER - 1) block don't coalese */
         if (order == (MAX_ORDER - 1)) {
                 KLOG("[pmm] 2^(MAX_ORDER - 1) block don't coalese. append\n");
