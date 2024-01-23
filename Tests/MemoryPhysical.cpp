@@ -299,3 +299,62 @@ TEST(MemoryPhysical, free_page)
                 EXPECT_EQ(allocs1[i], allocs2[i]);
         }
 }
+
+TEST(MemoryPhysical, free_pages)
+{
+        /* Bootmem is required */
+        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
+        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
+                bootmem_area[i] = 0;
+        }
+        bootmem_init((void*) bootmem_area);
+
+        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
+        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
+                playground[i] = 0;
+        }
+
+        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
+        playground = (uint8_t*) CUSTOM_ALIGN(playground,
+               SIZEOF_BLOCK(MAX_ORDER - 1));
+
+        uint64_t blockCount = init_allocator(
+                playground,
+                playground + TEST_PM_PLAYGROUND_SIZE
+        );
+
+        std::vector<uint8_t*> allocs = {};
+
+        auto pagesCount = blockCount * SIZEOF_BLOCK(MAX_ORDER - 1) / PAGE_SIZE;
+        EXPECT_EQ(pagesCount, 2048); /* 8 MiB == 2048 * PAGE_SIZE */
+
+        auto currBlockCount = blockCount;
+        for (auto i = MAX_ORDER - 1; 0 <= i; i--) {
+                /* Allocate all on current order */
+                for (auto j = 0; j < currBlockCount; j++) {
+                        uint8_t *block = (uint8_t*) alloc_pages(i);
+                        EXPECT_TRUE(block != nullptr);
+
+                        allocs.push_back(block);
+                }
+
+                /* Free them all */
+                for (auto block : allocs) {
+                        free_pages(block, i);
+                }
+                
+                /* Should be able to allocate them, again */
+                for (auto j = 0; j < currBlockCount; j++) {
+                        uint8_t *block = (uint8_t*) alloc_pages(i);
+                        EXPECT_TRUE(block != nullptr);
+                }
+
+                /* Free them again for the next iter */
+                for (auto block : allocs) {
+                        free_pages(block, i);
+                }
+
+                currBlockCount *= 2;
+                allocs.clear();
+        }
+}
