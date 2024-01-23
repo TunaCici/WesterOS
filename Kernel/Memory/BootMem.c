@@ -8,10 +8,10 @@
 
 #include <stdint.h>
 
+#include "LibKern/Console.h"
+
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
-
-#include "LibKern/Console.h"
 
 static volatile void *baseAddr = 0;
 static volatile uint8_t map[BM_MAP_SIZE] = {0};
