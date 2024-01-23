@@ -167,7 +167,7 @@ TEST(MemoryPhysical, alloc_page)
 
         /* No available space left at this point */
         uint8_t *page = (uint8_t*) alloc_page();
-        EXPECT_TRUE(page == 0);
+        EXPECT_TRUE(page == nullptr);
 }
 
 TEST(MemoryPhysical, alloc_pages)
@@ -193,6 +193,10 @@ TEST(MemoryPhysical, alloc_pages)
                 playground + TEST_PM_PLAYGROUND_SIZE
         );
 
+        /* Any alloc outside the range [0 ... MAX_ORDER) is not allowed */
+        uint8_t *block = (uint8_t*) alloc_pages(MAX_ORDER);
+        EXPECT_TRUE(block == nullptr);
+
         /* Alloc 2 of each order (2 is just an arbitrary number) */
         std::vector<uint8_t*> allocs = {};
 
@@ -200,8 +204,8 @@ TEST(MemoryPhysical, alloc_pages)
                 uint8_t *block1 = (uint8_t*) alloc_pages(i);
                 uint8_t *block2 = (uint8_t*) alloc_pages(i);
 
-                EXPECT_TRUE(block1 != 0);
-                EXPECT_TRUE(block2 != 0);
+                EXPECT_TRUE(block1 != nullptr);
+                EXPECT_TRUE(block2 != nullptr);
 
                 /* Write random value */
                 for (auto j = 0; j < SIZEOF_BLOCK(i); j++) {
