@@ -53,8 +53,6 @@ void __try_to_mark(list_head_t *block, const uint32_t order)
         if (order < MAX_ORDER - 1) {
                 uint64_t idx = __block_to_idx(block, order);
 
-                KLOG("[pmm] mark idx %lu in 2^%u as USED\n", idx, order);
-
                 BUDDY_MARK_USED(buddyPmm[order].map, idx);
         }
 }
@@ -117,9 +115,7 @@ list_head_t* __try_coalescing(list_head_t* block, const uint32_t order)
         uint64_t buddyIdx = __block_to_idx(buddy, order);
 
         /* Coalese */
-        if (!BUDDY_GET_MARK(buddyPmm[order].map, buddyIdx)) {
-                KLOG("[pmm] buddy is free. coalese\n");
- 
+        if (!BUDDY_GET_MARK(buddyPmm[order].map, buddyIdx)) { 
                 __remove_from_order(buddy, order);
 
                 list_head_t *left = idx < buddyIdx ? block : buddy;
@@ -201,11 +197,8 @@ void* alloc_page()
 void* alloc_pages(const uint32_t order)
 {
         if (MAX_ORDER <= order) {
-                KLOG("[pmm] can't allocate blocks larger than 2^(MAX_ORDER - 1)\n");
                 return 0;
         }
-
-        KLOG("[pmm] allocate an 2^%u order block (%u bytes)\n", order, SIZEOF_BLOCK(order));
 
         void *retAddr = 0;
 
@@ -213,19 +206,19 @@ void* alloc_pages(const uint32_t order)
         uint32_t startOrder = 0;
         for (; startOrder < MAX_ORDER; startOrder++) {
                 if (SIZEOF_BLOCK(startOrder) < SIZEOF_BLOCK(order)) {
-                        KLOG("[pmm] order 2^%u size not enough. skip\n", startOrder);
+                        /* order 2^%u size not enough. skip */
                         continue;
                 } else if (!buddyPmm[startOrder].listHead.next) {
-                        KLOG("[pmm] order 2^%u doesn't have free blocks. skip\n", startOrder);
+                        /* order 2^%u doesn't have free blocks. skip */
                         continue;
                 }
 
-                KLOG("[pmm] order 2^%u has free blocks. start here\n", startOrder);
+                /* order 2^%u has free blocks. start here */
                 break;
         }
 
         if (MAX_ORDER <= startOrder) {
-                KLOG("[pmm] no available free blocks. fail\n");
+                /* no available free blocks. fail */
                 return 0;
         }
 
@@ -239,18 +232,10 @@ void* alloc_pages(const uint32_t order)
         block->next = 0;
         block->prev = 0;
 
-        uint64_t idx = __block_to_idx(block, startOrder);
-
-        KLOG("[pmm] choosen block: 0x%p (idx: %lu)\n", block, idx);
-
         uint32_t currOrder;
         for (currOrder = startOrder; 0 <= currOrder; currOrder--) {
-                KLOG("[pmm] currOrder: %u\n", currOrder);
-
                 if (SIZEOF_BLOCK(currOrder) == SIZEOF_BLOCK(order)) {
                         /* Perfect fit. allocate here */
-                        KLOG("[pmm] perfect fit for 2^%u. allocate\n", currOrder);
-
                         __try_to_mark(block, currOrder);
 
                         retAddr = (void*) block;
@@ -258,7 +243,6 @@ void* alloc_pages(const uint32_t order)
                 } else {
                         /* Split */
                         list_head_t *buddy = __buddy(block, currOrder - 1);
-                        KLOG("[pmm] split. targetBlock: 0x%p, it's buddy: 0x%p\n", block, buddy);
         
                         __try_to_mark(block, currOrder);
                         __append_to_order(buddy, currOrder - 1);
@@ -276,7 +260,6 @@ void free_page(void *addr)
 void free_pages(void *addr, const uint32_t order)
 {
         if (!addr || MAX_ORDER <= order) {
-                KLOG("[pmm] target is NULL or order is larger then 2^(MAX_ORDER - 1). fail\n");
                 return;
         }
 
@@ -284,7 +267,6 @@ void free_pages(void *addr, const uint32_t order)
 
         /* 2^(MAX_ORDER - 1) block don't coalese */
         if (order == (MAX_ORDER - 1)) {
-                KLOG("[pmm] 2^(MAX_ORDER - 1) block don't coalese. append\n");
                 __append_to_order(addr, order);
                 return;
         }
@@ -292,9 +274,8 @@ void free_pages(void *addr, const uint32_t order)
         list_head_t *buddy = __buddy(addr, order);
         uint64_t buddyIdx = __block_to_idx(buddy, order);
 
-        /* Coalesce chain start? */
+        /* Coalesce is not possible */
         if (BUDDY_GET_MARK(buddyPmm[order].map, buddyIdx)) {
-                KLOG("[pmm] buddy is not free. append to list\n");
 
                 __append_to_order(addr, order);
 
