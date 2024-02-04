@@ -232,7 +232,7 @@ void* alloc_pages(const uint32_t order)
         block->next = 0;
         block->prev = 0;
 
-        uint32_t currOrder;
+        int32_t currOrder;
         for (currOrder = startOrder; 0 <= currOrder; currOrder--) {
                 if (SIZEOF_BLOCK(currOrder) == SIZEOF_BLOCK(order)) {
                         /* Perfect fit. allocate here */
