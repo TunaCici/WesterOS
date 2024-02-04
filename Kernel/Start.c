@@ -8,6 +8,8 @@
 #include <stdarg.h>
 
 #include "ARM64/Machine.h"
+#include "ARM64/RegisterSet.h"
+
 #include "MemoryLayout.h"
 
 #include "LibKern/Time.h"
@@ -103,13 +105,43 @@ void start(void)
         }
 
         /* Check if interrupts are enabled */
-        klog("---- Interrupts: ");
+        irq_disable();
+        fiq_disable();
+        serror_enable();
+        debug_disable();
+        isb();
+
+        klog("---- IRQ: ");
         MRS("DAIF", val32);
 
-        if (val32 & (1 << 7)) {
-                kprintf("Enabled\n");
+        if (val32 & DAIF_IRQ) {
+                kprintf("Masked\n");
         } else {
-                kprintf("Disabled\n");
+                kprintf("Unmasked\n");
+        }
+
+        klog("---- FIQ: ");
+
+        if (val32 & DAIF_FIQ) {
+                kprintf("Masked\n");
+        } else {
+                kprintf("Unmasked\n");
+        }
+
+        klog("---- Debug: ");
+
+        if (val32 & DAIF_DEBUG) {
+                kprintf("Masked\n");
+        } else {
+                kprintf("Unmasked\n");
+        }
+
+        klog("---- SError: ");
+
+        if (val32 & DAIF_SERROR) {
+                kprintf("Masked\n");
+        } else {
+                kprintf("Unmasked\n");
         }
 
         /* -------- Memory -------- */

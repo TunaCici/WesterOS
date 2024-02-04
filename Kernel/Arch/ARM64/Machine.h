@@ -1,8 +1,9 @@
 /*
  * Copyright 2020, Data61, CSIRO (ABN 41 687 119 230)
  *
- * Original Source: seL4/include/arch/arm/armv/armv8-a/64/armv/machine.h
- * SPDX-License-Identifier: GPL-2.0-only
+ * Ref: seL4/include/arch/arm/armv/armv8-a/64/armv/machine.h
+ *    : android/kernel/msm/.../arch/arm64/include/asm/irqflags.h 
+ * Author: Tuna CICI
  */
 
 #pragma once
@@ -32,6 +33,56 @@ static inline void isb(void)
     asm volatile("isb sy" ::: "memory");
 }
 
+/*
+ * Mask / unmask DAIF via DAIFSet / DAIFClr registers
+ *
+ * Ref: developer.arm.com/documentation/100933/0100/Processor-state-in-exception-handling
+ *
+ * D (0b1___): Debug 
+ * A (0b_1__): SError
+ * I (0b__1_): IRQ
+ * F (0b___1): FIQ
+ */
+static inline void debug_enable(void)
+{
+	asm volatile("msr daifclr, #8" ::: "memory");
+}
+
+static inline void serror_enable(void)
+{
+	asm volatile("msr daifclr, #4" ::: "memory");
+}
+
+static inline void irq_enable(void)
+{
+	asm volatile("msr daifclr, #2" ::: "memory");
+}
+
+static inline void fiq_enable(void)
+{
+	asm volatile("msr daifclr, #1" ::: "memory");
+}
+
+static inline void debug_disable(void)
+{
+	asm volatile("msr daifset, #8" ::: "memory");
+}
+
+static inline void serror_disable(void)
+{
+	asm volatile("msr daifset, #4" ::: "memory");
+}
+
+static inline void irq_disable(void)
+{
+	asm volatile("msr daifset, #2" ::: "memory");
+}
+
+static inline void fiq_disable(void)
+{
+	asm volatile("msr daifset, #1" ::: "memory");
+}
+
 #define MRS(reg, v)  asm volatile("mrs %x0," reg : "=r"(v))
 #define MSR(reg, v)                                \
     do {                                           \
@@ -39,7 +90,3 @@ static inline void isb(void)
         asm volatile("msr " reg ",%x0" :: "r" (_v));\
     }while(0)
 
-#define SYSTEM_WRITE_WORD(reg, v) MSR(reg, v)
-#define SYSTEM_READ_WORD(reg, v)  MRS(reg, v)
-#define SYSTEM_WRITE_64(reg, v)   MSR(reg, v)
-#define SYSTEM_READ_64(reg, v)    MRS(reg, v)
