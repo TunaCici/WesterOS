@@ -69,22 +69,6 @@ void kmain(void)
                 blockCount, blockCount * 2
         );
 
-        uint32_t i = 0;
-        void *tmp = alloc_pages(i);
-        tmp = alloc_pages(i);
-        if (tmp) {
-                klog("[kmain] alloc_pages(%u) OK\n", i);
-        } else {
-                klog("[kmain] alloc_pages(%u) FAIL\n", i);
-        }
-
-        pmm_klog_buddy();
-
-        free_pages(tmp, i);
-        klog("[kmain] free_pages(0x%p, %u)\n", tmp, i);
-
-        pmm_klog_buddy();
-
         /* Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;) {
