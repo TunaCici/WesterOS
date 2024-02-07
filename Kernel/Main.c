@@ -49,6 +49,7 @@ void kmain(void)
                 /* TODO: Panic here */
         }
 
+        /* 0. Initialize BootMem */
         klog("[kmain] Initializing early memory manager...\n");
 
         uint64_t pageCount = bootmem_init(kernelEnd);
@@ -57,7 +58,7 @@ void kmain(void)
                 pageCount, (pageCount * PAGE_SIZE) / 1024
         );
 
-        /* Initializa PMM */
+        /* 1. Initialize PMM */
         klog("[kmain] Initializing physical memory manager...\n");
 
         uint64_t blockCount = init_allocator(
@@ -69,10 +70,13 @@ void kmain(void)
                 blockCount, blockCount * 2
         );
 
-        /* Do something weird */
+        /* 2. Setup Interrupt Vector Tables */
+        
+
+        /* X. Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;) {
                 klog("[kmain] Zzz..\n");
-                ksleep(3000);
+                ksleep(15000);
         }
 }
