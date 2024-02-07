@@ -70,6 +70,7 @@ GTEST_CXXFLAGS = ${INCLUDES} -g -Wall -Wextra -std=c++20 \
 
 # Project source files
 SRCS = \
+	Kernel/Arch/ARM64/Interrupt.c \
 	Kernel/Start.c \
 	Kernel/Main.c \
 	Kernel/Library/LibKern/Console.c \
@@ -93,6 +94,7 @@ LDSCRIPT = Kernel/kernel.ld
 # Architecture dependent files
 ifeq (${TARGET_ARCH}, aarch64)
 	ENTRY = Kernel/Arch/ARM64/Entry.S
+	VECTOR = Kernel/Arch/ARM64/Vector.S
 else
 	${error Unsupported target architecture ${TARGET_ARCH}}
 endif
@@ -106,6 +108,11 @@ Entry.o: ${ENTRY}
 	@echo "AS ${ENTRY} -> ${BUILD_DIR}/Entry.o"
 	@${AS} ${ENTRY} -o ${BUILD_DIR}/Entry.o
 	@echo "AS ${ENTRY} ${GREEN}ok${NC}"
+
+Vector.o: ${VECTOR}
+	@echo "AS ${VECTOR} -> ${BUILD_DIR}/Vector.o"
+	@${AS} ${VECTOR} -o ${BUILD_DIR}/Vector.o
+	@echo "AS ${VECTOR} ${GREEN}ok${NC}"	
 
 %.o: %.c
 ifeq (${CROSS}, True)
@@ -129,7 +136,7 @@ else
 	@echo "HOST_CXX $< ${GREEN}ok${NC}"
 endif
 
-kernel: Entry.o ${OBJS}
+kernel: Entry.o Vector.o ${OBJS}
 	@echo "LINK ${OBJS} -T ${LDSCRIPT}"
 	@${LD} -T ${LDSCRIPT} -o ${BUILD_DIR}/kernel.elf ${addprefix ${BUILD_DIR}/, $(notdir ${OBJS})}
 	@echo "LINK ${OBJS} ${GREEN}ok${NC}"
@@ -143,6 +150,10 @@ debug:
 	@echo "OBJDUMP ${BUILD_DIR}/Entry.o"
 	@${OBJDUMP} -S ${BUILD_DIR}/Entry.o > ${BUILD_DIR}/entry.asm
 	@echo "OBJDUMP ${BUILD_DIR}/Entry.o ${GREEN}ok${NC}"
+
+	@echo "OBJDUMP ${BUILD_DIR}/Vector.o"
+	@${OBJDUMP} -S ${BUILD_DIR}/Vector.o > ${BUILD_DIR}/vector.asm
+	@echo "OBJDUMP ${BUILD_DIR}/Vector.o ${GREEN}ok${NC}"
 
 compiledb:
 	@echo "COMPILEDB -n make all"

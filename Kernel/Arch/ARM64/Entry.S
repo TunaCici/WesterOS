@@ -12,28 +12,29 @@
 .global _start
 
 _start:
-	/* initialize stack pointers for svc modes */
-	mov     x0, #1     // select SP_EL1 for stack pointer
+	/* Select SP_EL1 for stack pointer - am i sure? */
+	mov     x0, #1
 	msr     spsel, x0
 	isb
 
-	/* Stack size of 'init_stktop' */
+	/* Init stack (`init_stktop` bytes) */
 	adrp    x0, init_stktop
 	mov     sp, x0
 
-	/* clear the entry bss section, the svc stack, and kernel page table */
+	/* Clear the entry bss section, the svc stack, and kernel page table */
 	ldr     x1, =edata_entry
 	ldr     x2, =end_entry
 	mov     x3, #0x00
 
-	/* Paint a random register with a known value for DEBUG in QEMU */
-	# mov   x3, #0xab 
+	/* Register vector tables */
+	adr x0, vector_table
+	msr vbar_el1, x0
 1:
 	cmp     x1, x2
 	b.gt    2f
 	str     x3, [x1]
 	add     x1, x1, #0x08
-	blt     1b
+	b.lt     1b
 2:
 	bl      start
 	b .

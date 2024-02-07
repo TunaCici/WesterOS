@@ -9,7 +9,7 @@ OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
 ENTRY(_start)
 
-ENTRY_INIT_STACK_SIZE = 0x2000;
+ENTRY_INIT_STACK_SIZE = 0x2000; /* 8 KiB */
 
 SECTIONS
 {
@@ -23,17 +23,22 @@ SECTIONS
         PROVIDE (kstart = .);
         
         .start_sec : {
+                Build/Vector.o(.text)
                 Build/Entry.o(.text)
                 Build/Start.o(.text .text.*)
 
+                Build/Vector.o(.rodata .rodata.*)
                 Build/Entry.o(.rodata .rodata.*)
                 Build/Start.o(.rodata .rodata.*)
 
+                Build/Vector.o(.rodata .rodata.*)
                 Build/Entry.o(.data .data.*)
                 Build/Start.o(.data .data.*)
 
+
                 PROVIDE(edata_entry = .);
 
+                Build/Vector.o(.rodata .rodata.*)
                 Build/Entry.o(.bss .bss.* COMMON)
                 Build/Start.o(.bss .bss.* COMMON)
 
