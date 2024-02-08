@@ -70,13 +70,13 @@ void kmain(void)
                 blockCount, blockCount * 2
         );
 
-        /* 2. Setup Interrupt Vector Tables */
-        
+        /* Cause an memory exception */
+        volatile uint64_t dump = *((volatile uint64_t*) 0xffffffffffffffffull);
 
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;) {
                 klog("[kmain] Zzz..\n");
-                ksleep(15000);
+                ksleep(5000);
         }
 }

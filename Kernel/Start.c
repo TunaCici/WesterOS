@@ -105,10 +105,10 @@ void start(void)
         }
 
         /* Check if interrupts are enabled */
+        debug_disable();
         irq_disable();
         fiq_disable();
         serror_enable();
-        debug_disable();
         isb();
 
         klog("---- IRQ: ");
@@ -143,6 +143,9 @@ void start(void)
         } else {
                 kprintf("Unmasked\n");
         }
+
+        MRS("VBAR_EL1", val64);
+        klog("---- Vector Table: 0x%lx\n", val64);
 
         /* -------- Memory -------- */
         klog("Checking Memory\n");

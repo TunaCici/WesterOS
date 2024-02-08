@@ -23,23 +23,23 @@ SECTIONS
         PROVIDE (kstart = .);
         
         .start_sec : {
-                Build/Vector.o(.text)
                 Build/Entry.o(.text)
+                Build/Vector.o(.text)
                 Build/Start.o(.text .text.*)
 
-                Build/Vector.o(.rodata .rodata.*)
                 Build/Entry.o(.rodata .rodata.*)
+                Build/Vector.o(.rodata .rodata.*)
                 Build/Start.o(.rodata .rodata.*)
 
-                Build/Vector.o(.rodata .rodata.*)
                 Build/Entry.o(.data .data.*)
+                Build/Vector.o(.data .data.*)
                 Build/Start.o(.data .data.*)
 
 
                 PROVIDE(edata_entry = .);
 
-                Build/Vector.o(.rodata .rodata.*)
                 Build/Entry.o(.bss .bss.* COMMON)
+                Build/Vector.o(.bss .bss.* COMMON)
                 Build/Start.o(.bss .bss.* COMMON)
 
                 /*define a stack for the entry*/

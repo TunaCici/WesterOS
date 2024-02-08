@@ -70,7 +70,7 @@ GTEST_CXXFLAGS = ${INCLUDES} -g -Wall -Wextra -std=c++20 \
 
 # Project source files
 SRCS = \
-	Kernel/Arch/ARM64/Interrupt.c \
+	Kernel/Arch/ARM64/Exception.c \
 	Kernel/Start.c \
 	Kernel/Main.c \
 	Kernel/Library/LibKern/Console.c \
@@ -182,7 +182,7 @@ all:
 
 run:
 	${info Running ${PROJECT_NAME} for ${TARGET_ARCH}}
-	@${QEMU_SCRIPT} -nographic -no-reboot -kernel ${BUILD_DIR}/kernel.elf
+	@${QEMU_SCRIPT} -d int -nographic -no-reboot -kernel ${BUILD_DIR}/kernel.elf
 
 # GoogleTest libraries
 libgtest.a: ${GTEST_SRCS}
