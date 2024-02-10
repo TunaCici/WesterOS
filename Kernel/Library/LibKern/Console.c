@@ -55,6 +55,7 @@ static void timestamp(void)
 
         buffer[idx++] = '.';
 
+        /* TODO: Printing '0' is disabled due to me wanting a Fancy™ output */
         for (uint8_t i = 0; i < precision_sec; i++) {
                 if (sec % 10 == 0) {
                         buffer[idx++] = ' ';
