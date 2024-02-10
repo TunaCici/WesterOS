@@ -69,9 +69,6 @@ void kmain(void)
         klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
                 blockCount, blockCount * 2
         );
-
-        /* Cause an memory exception */
-        volatile uint64_t dump = *((volatile uint64_t*) 0xffffffffffffffffull);
     
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");

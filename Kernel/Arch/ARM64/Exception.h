@@ -11,7 +11,7 @@
 #define ESR_EC_OFFSET 26 /* bits */
 #define ESR_EC_SIZE 6 /* bits */
 
-enum exception_class {
+enum {
         EC_UNKNOWN = 0b000000,
         EC_WF_INSTRUCTION = 0b000001,
         EC_MCR_MRC_0b1111 = 0b000011,
@@ -46,7 +46,7 @@ enum exception_class {
         EC_WATCHPOINT_UNCHANGED = 0b110101,
         EC_BKPT_AARCH32 = 0b111000,
         EC_BRK_AARCH64 = 0b111100
-} exception_class;
+};
 
 typedef struct exception_frame {
         uint64_t x0;
