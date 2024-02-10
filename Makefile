@@ -43,7 +43,7 @@ INCLUDES = \
 	-I Tests/googletest/googletest/include
 CCFLAGS = ${INCLUDES} -march=armv8-a -mtune=cortex-a72 -mgeneral-regs-only \
 	-Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -DDEBUG
-CXXFLAGS = ${INCLUDES} -march=armv8-a -mtune=cortex-a72 -mgeneral-regs-only \ 
+CXXFLAGS = ${INCLUDES} -march=armv8-a -mtune=cortex-a72 -mgeneral-regs-only \
 	-Wall -Wextra -ffreestanding -nostdlib -std=c++20 -DDEBUG
 HOST_CCFLAGS = ${INCLUDES} -Wall -Wextra -std=gnu99 -g -m64
 HOST_CXXFLAGS = ${INCLUDES} -Wall -Wextra -std=c++20 -g -m64
