@@ -11,6 +11,9 @@ https://developer.arm.com/documentation/den0024/a/
 QEMU_Documentation_8_0_0.pdf
 https://readthedocs.org/projects/qemu/downloads/pdf/latest/
 
+AArch64_Options_GCC_14_0_1.pdf
+https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html
+
 #
 # Helpful Writings <-> Source
 #
