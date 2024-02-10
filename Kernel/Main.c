@@ -72,7 +72,7 @@ void kmain(void)
 
         /* Cause an memory exception */
         volatile uint64_t dump = *((volatile uint64_t*) 0xffffffffffffffffull);
-
+    
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;) {
