@@ -7,6 +7,20 @@
 	#address-cells = <0x02>;
 	compatible = "linux,dummy-virt";
 
+	psci {
+		migrate = <0xc4000005>;
+		cpu_on = <0xc4000003>;
+		cpu_off = <0x84000002>;
+		cpu_suspend = <0xc4000001>;
+		method = "hvc";
+		compatible = "arm,psci-1.0\0arm,psci-0.2\0arm,psci";
+	};
+
+	memory@40000000 {
+		reg = <0x00 0x40000000 0x00 0x80000000>;
+		device_type = "memory";
+	};
+
 	platform-bus@c000000 {
 		interrupt-parent = <0x8003>;
 		ranges = <0x00 0x00 0xc000000 0x2000000>;
@@ -381,7 +395,7 @@
 
 	chosen {
 		stdout-path = "/pl011@9000000";
-		rng-seed = <0x973f7847 0x230a68ef 0x58f4500c 0x4e85c270 0x2e90f80c 0x2de097d0 0x530bc57f 0x6e8347db>;
-		kaslr-seed = <0xac651fb3 0xd31e3512>;
+		rng-seed = <0xbf47684c 0xe88f2f5e 0x690a188e 0xe298182e 0x1a220d22 0x8ede5dc3 0x7f3e87c 0x94d27ea7>;
+		kaslr-seed = <0xa3bc5121 0x774bec6c>;
 	};
 };
