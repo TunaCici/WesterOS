@@ -1,10 +1,9 @@
 /*
-*       File: Multiboot2.S
-*       Originally from: intermezzOS
-*       Modified by: Tuna CICI
-*
-*       Defines the GNU Multiboot2 header for ARMv8
-*/
+ * Defines the GNU Multiboot2 header for ARMv8
+ *
+ * Originally from: intermezzOS
+ * Modified by: Tuna CICI
+ */
 
 .section .multiboot_header
 .align 8

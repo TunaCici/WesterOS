@@ -1,8 +1,7 @@
 /* 
- *      File: Exception.c
- *      Author: Tuna CICI
+ * ARM64 exception handlers
  *
- *      ARM64 exception handlers
+ * Author: Tuna CICI
  */
 
 #include "ARM64/Exception.h"

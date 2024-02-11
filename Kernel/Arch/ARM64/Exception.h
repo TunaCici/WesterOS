@@ -1,8 +1,7 @@
 /*
- *      File: Exception.h
- *      Author: Tuna CICI
+ * ARM64 exception definitions
  *
- *      ARM64 exception definitions
+ * Author: Tuna CICI
  */
 
 #include <stdint.h>

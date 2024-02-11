@@ -1,9 +1,8 @@
 /*
-*	File: Vector.S
-*	Author: Tuna CICI
-*	
-*	AArch64 exception vector table
-*/
+ * AArch64 exception vector table
+ *	
+ * Author: Tuna CICI
+ */
 
 #include "ARM64/Interrupt.h"
 

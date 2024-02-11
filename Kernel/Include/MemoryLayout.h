@@ -1,8 +1,8 @@
 /*
-* Physical memory layout of QEMU ARM Virtual Machine
-*
-* Original src: https://www.qemu.org/docs/master/system/arm/virt.html
-*/
+ * Physical memory layout of QEMU ARM Virtual Machine
+ *
+ * Original src: https://www.qemu.org/docs/master/system/arm/virt.html
+ */
 
 #ifndef MEMORY_LAYOUT_H
 #define MEMORY_LAYOUT_H
