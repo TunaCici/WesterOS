@@ -164,6 +164,9 @@ void __attribute__((format(printf, 1, 2))) kprintf(const char *fmt, ...)
                 case 's':
                        kprint_str(va_arg(args, const char*));
                        break;
+                case 'c':
+                        uart_putc(va_arg(args, const uint32_t));
+                        break;
                 default:
                        uart_putc('%');
                        uart_putc(c);
@@ -217,6 +220,9 @@ void __attribute__((format(printf, 1, 2))) klog(const char *fmt, ...)
                 case 's':
                        kprint_str(va_arg(args, const char*));
                        break;
+                case 'c':
+                        uart_putc(va_arg(args, const uint32_t));
+                        break;
                 default:
                        uart_putc('%');
                        uart_putc(c);
