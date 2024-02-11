@@ -75,6 +75,7 @@ SRCS = \
 	Kernel/Arch/ARM64/Exception.c \
 	Kernel/Start.c \
 	Kernel/Main.c \
+	Kernel/Library/LibKern/DeviceTree.c \
 	Kernel/Library/LibKern/Console.c \
 	Kernel/Library/LibKern/Time.c \
 	Kernel/Memory/BootMem.c \
