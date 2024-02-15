@@ -26,8 +26,14 @@ _start:
 	mov     x3, #0x00
 
 	/* Register vector tables */
-	adr x0, vector_table
-	msr vbar_el1, x0
+	adr	x0, vector_table
+	msr	vbar_el1, x0
+
+	/* Enable access to FPU & Advanced SIMD (NEON) */
+	mrs	x0, CPACR_EL1
+	orr	x0, x0, #(0x3 << 20)
+	msr	CPACR_EL1, x0
+	isb
 1:
 	cmp     x1, x2
 	b.gt    2f
