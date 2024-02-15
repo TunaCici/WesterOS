@@ -6,6 +6,9 @@
 
 #pragma once
 
+#ifndef DEVICETREE_H
+#define DEVICETREE_H
+
 #include <stdint.h>
 
 #define TO_LE(val) __builtin_bswap32(val) /* [GCC's] to little-endian */
@@ -40,3 +43,5 @@ uint8_t dtb_get_cpus(void *base, uint64_t *cpu_count);
 /* TODO: Generic */
 uint8_t dtb_init(void *base);
 uint8_t dtb_next(void *dev_name);
+
+#endif /* DEVICETREE_H */

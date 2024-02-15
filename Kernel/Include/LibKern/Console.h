@@ -1,8 +1,10 @@
 /*
- * Console printing/logging functionalities for the Kernel
+ * Console printing/logging functionalities for the kernel
  *
  * Author: Tuna CICI
  */
+
+#pragma once
 
 #ifndef CONSOLE_H
 #define CONSOLE_H

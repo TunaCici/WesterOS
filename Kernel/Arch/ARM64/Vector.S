@@ -4,8 +4,6 @@
  * Author: Tuna CICI
  */
 
-#include "ARM64/Interrupt.h"
-
 .text
 .balign 2048
 .global vector_table

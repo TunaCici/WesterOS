@@ -1,5 +1,5 @@
 /*
- * Time & timing related functionalities for the Kernel (mostly arch dependent)
+ * Time & timing related functionalities for the kernel (mostly arch dependent)
  *
  * Author: Tuna CICI
  */
