@@ -82,6 +82,23 @@ SRCS = \
 	Kernel/Memory/Physical.c
 OBJS = ${SRCS:.c=.o}
 
+ASMS = \
+	Kernel/Arch/ARM64/Entry.S \
+	Kernel/Arch/ARM64/Vector.S \
+	Kernel/Library/LibKern/String/memchr.S \
+	Kernel/Library/LibKern/String/memcmp.S \
+	Kernel/Library/LibKern/String/memcpy.S \
+	Kernel/Library/LibKern/String/memrchr.S \
+	Kernel/Library/LibKern/String/memset.S \
+	Kernel/Library/LibKern/String/strchr.S \
+	Kernel/Library/LibKern/String/strcmp.S \
+	Kernel/Library/LibKern/String/strcpy.S \
+	Kernel/Library/LibKern/String/strlen.S \
+	Kernel/Library/LibKern/String/strncmp.S \
+	Kernel/Library/LibKern/String/strnlen.S \
+	Kernel/Library/LibKern/String/strrchr.S
+ASM_OBJS = ${ASMS:.S=.o}
+
 # Test source files (must be hardware-independent)
 TEST_SRCS = \
 	Tests/MemoryPageDef.cpp \
@@ -94,28 +111,15 @@ TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 
 LDSCRIPT = Kernel/kernel.ld
 
-# Architecture dependent files
-ifeq (${TARGET_ARCH}, aarch64)
-	ENTRY = Kernel/Arch/ARM64/Entry.S
-	VECTOR = Kernel/Arch/ARM64/Vector.S
-else
-	${error Unsupported target architecture ${TARGET_ARCH}}
-endif
-
 # To switch between CC and HOST_CC (helpful when compiling tests)
 CROSS ?= True
 
 default: all
 
-Entry.o: ${ENTRY}
-	@echo "AS ${ENTRY} -> ${BUILD_DIR}/Entry.o"
-	@${AS} ${ENTRY} -o ${BUILD_DIR}/Entry.o
-	@echo "AS ${ENTRY} ${GREEN}ok${NC}"
-
-Vector.o: ${VECTOR}
-	@echo "AS ${VECTOR} -> ${BUILD_DIR}/Vector.o"
-	@${AS} ${VECTOR} -o ${BUILD_DIR}/Vector.o
-	@echo "AS ${VECTOR} ${GREEN}ok${NC}"	
+%.o: %.S
+	@echo "CC $<"
+	@${CC} ${CCFLAGS} -c $< -o ${BUILD_DIR}/${notdir $@}
+	@echo "CC $< ${GREEN}ok${NC}"
 
 %.o: %.c
 ifeq (${CROSS}, True)
@@ -139,10 +143,10 @@ else
 	@echo "HOST_CXX $< ${GREEN}ok${NC}"
 endif
 
-kernel: Entry.o Vector.o ${OBJS}
-	@echo "LINK ${OBJS} -T ${LDSCRIPT}"
-	@${LD} -T ${LDSCRIPT} -o ${BUILD_DIR}/kernel.elf ${addprefix ${BUILD_DIR}/, $(notdir ${OBJS})}
-	@echo "LINK ${OBJS} ${GREEN}ok${NC}"
+kernel: ${ASM_OBJS} ${OBJS}
+	@echo "LINK kernel.elf -T ${LDSCRIPT}"
+	@${LD} -T ${LDSCRIPT} -o ${BUILD_DIR}/kernel.elf ${addprefix ${BUILD_DIR}/, $(notdir ${ASM_OBJS})} ${addprefix ${BUILD_DIR}/, $(notdir ${OBJS})}
+	@echo "LINK kernel.elf ${GREEN}ok${NC}"
 
 debug:
 	@echo "OBJDUMP ${BUILD_DIR}/kernel.elf"
