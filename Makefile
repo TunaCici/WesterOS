@@ -21,7 +21,7 @@ TEST_DIR	= Tests
 
 # Target architecture & Toolchain
 TARGET_ARCH = aarch64
-TOOLCHAIN_PATH = Toolchain/arm-gnu-toolchain-12.2.rel1-darwin-arm64-aarch64-none-elf
+TOOLCHAIN_PATH = Toolchain/arm-gnu-toolchain-13.2.Rel1-darwin-arm64-aarch64-none-elf/
 
 # Cross-compiler
 CC = ${TOOLCHAIN_PATH}/bin/aarch64-none-elf-gcc
