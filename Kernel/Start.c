@@ -12,6 +12,7 @@
 
 #include "MemoryLayout.h"
 
+#include "LibKern/DeviceTree.h"
 #include "LibKern/Time.h"
 #include "LibKern/Console.h"
 
@@ -23,23 +24,7 @@ extern uint64_t kend;
 void _halt(const char *s)
 {
         klog("Halting due to: %s", s);
-
         wfi();
-}
-
-/* Check if DTB exists */
-void _fdt_check(void)
-{
-        volatile uint32_t *address = (uint32_t*) DTB_START;
-        volatile uint32_t magic = 0xEDFE0DD0; /* 0xDOODFEED */
-
-        if (*address == magic) {
-                klog("DTB");
-        } else {
-                _halt("DTB not");
-        }
-
-        kprintf(" found at Physical Address: 0x%p\n", address);
 }
 
 void start(void)
@@ -106,7 +91,7 @@ void start(void)
 
         /* Check if interrupts are enabled */
         debug_disable();
-        irq_disable();
+        irq_enable();
         fiq_disable();
         serror_enable();
         isb();
@@ -147,21 +132,14 @@ void start(void)
         MRS("VBAR_EL1", val64);
         klog("---- Vector Table: 0x%lx\n", val64);
 
-        /* -------- Memory -------- */
-        klog("Checking Memory\n");
-        _fdt_check();
-        klog("For now I skip DTB and instead hard-code everything :/\n");
-
-        val64 = RAM_SIZE / (1024 * 1024); /* Bytes to MiB */
-        klog("Total available RAM area: %lu MiB\n", val64);
-
+        /* -------- Machine Layout -------- */
         klog("QEMU ARM Virt Machine memory layout:\n");
 
         klog("---- BootROM Code: 0x%x - 0x%x (reserved)\n",
                 BOOTROM_START, BOOTROM_END
         );
 
-        klog ("---- GIC: 0x%x - 0x%x (controller)\n",
+        klog ("---- GICv2: 0x%x - 0x%x (controller)\n",
                 GIC_BASE, GIC_END
         );
 
@@ -190,11 +168,8 @@ void start(void)
                 kernelEnd
         );
 
-        val64 = RAM_SIZE;
-        val64 -= DTB_SIZE;
-        val64 -= (kernelEnd - kernelBase);
-        val64 /= (1024 * 1024);
-        klog("Total usable RAM area: %lu MiB\n", val64);
+        val64 = (kernelEnd - kernelBase);
+        klog("WesterOS kernel size: %lu bytes\n", val64);
 
         klog("Everything's OK. Calling the Kernel now...\n");
         kmain();
