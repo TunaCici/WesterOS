@@ -44,9 +44,4 @@
 #define DTB_SIZE        0x00100000      /* 1 MiB */
 #define DTB_END         (DTB_START + DTB_SIZE)      
 
-/* 'Usable' Memory */
-#define RAM_START       0x40000000
-#define RAM_SIZE        0x80000000 /* Hard-coded to 2 GiB */
-#define RAM_END         (RAM_START + RAM_SIZE)
-
 #endif /* MEMORY_LAYOUT_H */
