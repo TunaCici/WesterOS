@@ -36,9 +36,14 @@ typedef struct fdt_header {
         uint32_t size_dt_struct;
 } fdt_header;
 
+typedef struct fdt_prop {
+        uint32_t len;
+        uint32_t nameoff;
+} fdt_prop;
+
 /* Special */
-uint8_t dtb_get_memory(void* base, uint64_t *ram_start, uint64_t* ram_end);
-uint8_t dtb_get_cpus(void *base, uint64_t *cpu_count);
+uint8_t dtb_mem_info(void* base, uint64_t *mem_start, uint64_t* mem_end);
+uint8_t dtb_cpu_count(void *base, uint64_t *cpu_count);
 
 /* TODO: Generic */
 uint8_t dtb_init(void *base);
