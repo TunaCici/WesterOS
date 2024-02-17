@@ -1,5 +1,5 @@
 /*
- * Main kernel entry. What TODO? (further research required)
+ * Kernel entry
  *
  * Author: Tuna CICI
  */
@@ -9,8 +9,10 @@
 #include "ARM64/Machine.h"
 #include "MemoryLayout.h"
 
+#include "LibKern/String.h"
 #include "LibKern/Time.h"
 #include "LibKern/Console.h"
+#include "LibKern/DeviceTree.h"
 
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
@@ -28,48 +30,57 @@ extern uint64_t kend;
 uint64_t *kernel_pgtbl = &_kernel_pgtbl;
 uint64_t *user_pgtbl = &_user_pgtbl;
 
+
 void kmain(void)
 {
-        const uint8_t *kernelStart = (uint8_t*) &kstart;
-        const uint8_t *kernelEnd = (uint8_t*) &kend;
+        volatile const uint8_t *kernel_start = (uint8_t*) &kstart;
+        volatile const uint8_t *kernel_end = (uint8_t*) &kend;
 
-        const uint8_t *ramStart = (uint8_t*) RAM_START;
-        const uint8_t *ramEnd = (uint8_t*) RAM_END;
+        uint64_t mem_start = 0x0;
+        uint64_t mem_end = 0x0;
 
-        /**
-         * Need an addt. early mm before a nice buddy pmm can be initialized.
-         * It needs to have a FIXED size such as 16MiB or smth.
-         * A simple First-Fit alloc should do the trick /w bit-mapped pages.
-         *
-         * TODO: Implement a new mm called "BootMem" and then init buddy pmm.
-         **/
-
-        if ((ramEnd - ramStart) < BM_ARENA_SIZE * PAGE_SIZE) {
-                klog("[kmain] Not enough RAM available to boot :(\n");
-                /* TODO: Panic here */
+        /* 0. Get HW Information */
+        if (dtb_init((void*) DTB_START) != 0) {
+                klog("[kmain] Couldn't initialize DTB!\n");
+                wfi();
         }
 
-        /* 0. Initialize BootMem */
+        uint8_t res = dtb_mem_info((void*) DTB_START, &mem_start, &mem_end);
+        if (res) {
+                klog("[kmain] Failed to get memory info from dtb: %u\n", res);
+                wfi();
+        }
+
+        if ((mem_end - mem_start) < BM_ARENA_SIZE * PAGE_SIZE) {
+                klog("[kmain] Not enough memory available to boot :(\n");
+                klog("[kmain] ---- Detected memory size: %lu MiB\n",
+                        (mem_end - mem_start) / (1024 * 1024));
+                klog("[kmain] ---- Required minimum size: %u MiB\n",
+                        (BM_ARENA_SIZE * PAGE_SIZE) / (1024 * 1024));
+                wfi();
+        }
+
+        /* 1. Initialize BootMem */
         klog("[kmain] Initializing early memory manager...\n");
 
-        uint64_t pageCount = bootmem_init(kernelEnd);
+        uint64_t pageCount = bootmem_init(kernel_end);
 
         klog("[kmain] Pages available: %lu (%lu KiB) in bootmem\n",
                 pageCount, (pageCount * PAGE_SIZE) / 1024
         );
 
-        /* 1. Initialize PMM */
+        /* 2. Initialize PMM */
         klog("[kmain] Initializing physical memory manager...\n");
 
         uint64_t blockCount = init_allocator(
-                kernelEnd + pageCount * PAGE_SIZE,
-                ramEnd
+                kernel_end + pageCount * PAGE_SIZE,
+                mem_end
         );
 
         klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
                 blockCount, blockCount * 2
         );
-    
+
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");
         for(;;) {
