@@ -14,6 +14,9 @@ https://readthedocs.org/projects/qemu/downloads/pdf/latest/
 AArch64_Options_GCC_14_0_1.pdf
 https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html
 
+DDI0183G_UART_PL011_r1p5.pdf
+https://developer.arm.com/documentation/ddi0183/latest/
+
 #
 # Helpful Writings <-> Source
 #
