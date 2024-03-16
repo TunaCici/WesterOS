@@ -130,24 +130,24 @@ different interpretations on how a microkernel should be designed
 (e.g., L4, Minix). Here I use the term _micro_ as keeping the kernel as simple
 as possible. This means:
 
-* No drivers in kernel-space
-* No services in kernel-space
-* No filesystem in kernel-space
-* No process management in kernel-space
+* **No drivers in kernel-space**
+* **No services in kernel-space**
+* **No filesystem in kernel-space**
+* **No process management in kernel-space**
 
 All of the above would needed to be implemented as user-space applications.
 
 Kernel _will_ provide the following services & functions:
 
-* [Virtual] memory management (e.g., `mmap()`)
-* Interprocess communication (e.g., `msgsend()`, `msgrecv()`)
-* Channels (for IPC)
-* [POSIX] signals
-* Threads (e.g., `thread_create()`)
-* Interrupts (e.g., `intr_attach()`)
-* Clock & time services (e.g., `gettimeofday()`)
-* Synchronization primitives (e.g., mutex, semaphore)
-* Schedular (e.g. `yield()`)
+* **[Virtual] memory management** (e.g., `mmap()`)
+* **Interprocess communication** (e.g., `msgsend()`, `msgrecv()`)
+* **Channels (for IPC)**
+* **[POSIX] signals**
+* **Threads** (e.g., `thread_create()`)
+* **Interrupts** (e.g., `intr_attach()`)
+* **Clock & time** (e.g., `gettimeofday()`)
+* **Synchronization** (e.g., mutex, semaphore)
+* **Schedular** (e.g. `yield()`)
 
 The complete list of everything the kernel provides & inner workings of stuff
 will be explained later down the road. I'm still yet to _implement_ them..
