@@ -94,7 +94,7 @@ seems more interesting o.o_
 > 
 > Just give me some time. I am still learning as I go >.<
   
-Here's an overall overview of the kernel.
+Here's an overall overview of the kernel. (TODO: Will be updated soon...)
 
 ![Kernel Overview](Media/Kernel_Overview.png "Kernel Overview")
 
@@ -125,8 +125,29 @@ TODO: How does everything starts? Why the things I do are the way they are?
 
 ### Kernel
 
-TODO: Tell everyone why I choose to follow  a simple_microkernel_ design
-approach instead of a _generic/typical_ monolothic one (maybe even seL4?)
+WesterOS kernel follows a microkernel design. Different people/orgs have
+different interpretations on how a microkernel should be designed
+(e.g., L4, Minix). Here I use the term _micro_ as keeping the kernel as simple
+as possible. This means:
+
+* No drivers in kernel-space
+* No services in kernel-space
+* No filesystem in kernel-space
+* No process management in kernel-space
+
+All of the above would needed to be implemented as user-space applications.
+
+Kernel _will_ provide the following services & functions:
+
+* [Virtual] memory management (e.g., `mmap()`)
+* Interprocess communication (e.g., `msgsend()`, `msgrecv()`)
+* Channels (for IPC)
+* [POSIX] signals
+* Threads (e.g., `thread_create()`)
+* Interrupts (e.g., `intr_attach()`)
+* Clock & time services (e.g., `gettimeofday()`)
+* Synchronization primitives (e.g., mutex, semaphore)
+* Schedular (e.g. `yield()`)
 
 ### Userland
 
