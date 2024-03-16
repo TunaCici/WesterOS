@@ -149,6 +149,14 @@ Kernel _will_ provide the following services & functions:
 * Synchronization primitives (e.g., mutex, semaphore)
 * Schedular (e.g. `yield()`)
 
+The complete list of everything the kernel provides & inner workings of stuff
+will be explained later down the road. I'm still yet to _implement_ them..
+
+As for reference, I made high use of the following microkernels & OSes:
+
+* [seL4](https://sel4.systems)
+* [BlackBerry QNX 8.0](https://www.qnx.com/developers/docs/8.0/com.qnx.doc.qnxsdp.nav/topic/bookset.html) 
+
 ### Userland
 
 TODO: Some fun stuff. What awaits someone one they launch the OS?
