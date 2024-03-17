@@ -139,7 +139,7 @@ All of the above would needed to be implemented as user-space applications.
 
 Kernel _will_ provide the following services & functions:
 
-* **[Virtual] memory management** (e.g., `mmap()`)
+* **Memory management** (e.g., `mmap()`)
 * **Interprocess communication** (e.g., `msgsend()`, `msgrecv()`)
 * **Channels (for IPC)**
 * **[POSIX] signals**
@@ -148,6 +148,12 @@ Kernel _will_ provide the following services & functions:
 * **Clock & time** (e.g., `gettimeofday()`)
 * **Synchronization** (e.g., mutex, semaphore)
 * **Schedular** (e.g. `yield()`)
+
+The kernel requires an [initial] user image from the bootloader. This image 
+should contain the first ELF executable(s) that the kernel will launch (likely
+the `root task` and the `process manager`).
+
+> Useer image can be thought as the initrd used in Linux systems.
 
 The complete list of everything the kernel provides & inner workings of stuff
 will be explained later down the road. I'm still yet to _implement_ them..
