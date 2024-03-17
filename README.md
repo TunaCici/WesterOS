@@ -163,9 +163,16 @@ As for reference, I made high use of the following microkernels & OSes:
 * [seL4](https://sel4.systems)
 * [BlackBerry QNX 8.0](https://www.qnx.com/developers/docs/8.0/com.qnx.doc.qnxsdp.nav/topic/bookset.html) 
 
-### Userland
+### User Space
 
 TODO: Some fun stuff. What awaits someone one they launch the OS?
+
+The following services are to be implemented:
+
+* **Root Task**
+* **Process Manager**
+* **Device Discovery**
+* **File System Manager**
 
 ## Installation
 
