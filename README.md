@@ -139,15 +139,17 @@ All of the above would needed to be implemented as user-space applications.
 
 Kernel _will_ provide the following services & functions:
 
-* **Memory management** (e.g., `mmap()`)
-* **Interprocess communication** (e.g., `msgsend()`, `msgrecv()`)
+* **Memory Management** (e.g., `mmap()`)
+* **Capabilities(?)**
+* **Interprocess Communication** (e.g., `msgsend()`, `msgrecv()`)
 * **Channels (for IPC)**
-* **[POSIX] signals**
+* **[POSIX] Signals**
 * **Threads** (e.g., `thread_create()`)
 * **Interrupts** (e.g., `intr_attach()`)
-* **Clock & time** (e.g., `gettimeofday()`)
+* **Clock & Time** (e.g., `gettimeofday()`)
 * **Synchronization** (e.g., mutex, semaphore)
 * **Schedular** (e.g. `yield()`)
+
 
 The kernel requires an [initial] user image from the bootloader. This image 
 should contain the first ELF executable(s) that the kernel will launch (likely
@@ -170,9 +172,23 @@ TODO: Some fun stuff. What awaits someone one they launch the OS?
 The following services are to be implemented:
 
 * **Root Task**
+  * Launches other services predefined in a file. (e.g., `services.config`)
+  * Similiar to the init task on Linux systems.
+  * Will be the first user space application launched by the kernel.
 * **Process Manager**
+  * Defines the necessarry APIs and abstractions to model a process.
+  * Defines the system pathname(?) Similiar to QNX pathname manager.
+  * Other programs (via libc) can spawn/launch/destroy/debug processes.
+  * (should consider permissions & user rights)
 * **Device Discovery**
+  * Provides the necessarry APIs to enumerate devices.
+  * Builds a database/structure of all the devices within the system.
+  * The database/structure is built from the:
+    * [ARM] Device Tree Blob given by the root task. (TODO)
 * **File System Manager**
+  * Provides an abstraction to the underlying filesystem. (e.g., ext2, MS-DOS)
+  * Communicates with the available disk drivers. (TODO)
+  * Registers all files & folders to the system pathname.
 
 ## Installation
 
