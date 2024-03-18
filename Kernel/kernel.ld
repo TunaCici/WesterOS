@@ -13,11 +13,11 @@ ENTRY_INIT_STACK_SIZE = 0x2000; /* 8 KiB */
 SECTIONS
 {
         /* the entry point, before enabling paging. The code to enable paing
-        needs to have the same virtual/physical address. Entry.S and Start.c
-        run in this initial setting.*/
+         * needs to have the same virtual/physical address. Entry.S and Start.c
+         * run in this initial setting.
+         */
         
-        /* Why? Cuz -> https://github.com/qemu/qemu/blob/master/hw/arm/virt.c */
-        /* Also QEMU loads DTB at 0x4000_0000. So we move by 0x0001_0000 */
+        /* QEMU loads DTB at 0x00000000_40000000. So we skip 1MiB */
         . = 0x40100000;
         PROVIDE (kstart = .);
         
@@ -34,14 +34,13 @@ SECTIONS
                 Build/Vector.o(.data .data.*)
                 Build/Start.o(.data .data.*)
 
-
                 PROVIDE(edata_entry = .);
 
                 Build/Entry.o(.bss .bss.* COMMON)
                 Build/Vector.o(.bss .bss.* COMMON)
                 Build/Start.o(.bss .bss.* COMMON)
 
-                /*define a stack for the entry*/
+                /* Reserve space for stack */
                 . = ALIGN(0x1000);
                 . += ENTRY_INIT_STACK_SIZE;
 
