@@ -73,8 +73,8 @@ void kmain(void)
         klog("[kmain] Initializing physical memory manager...\n");
 
         uint64_t blockCount = init_allocator(
-                kernel_end + pageCount * PAGE_SIZE,
-                mem_end
+                (const void *) kernel_end + pageCount * PAGE_SIZE,
+                (const void *) mem_end
         );
 
         klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
