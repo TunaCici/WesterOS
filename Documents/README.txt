@@ -17,6 +17,9 @@ https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html
 DDI0183G_UART_PL011_r1p5.pdf
 https://developer.arm.com/documentation/ddi0183/latest/
 
+armv8_a_address_translation.pdf
+https://developer.arm.com/documentation/100940/latest/
+
 #
 # Helpful Writings <-> Source
 #
