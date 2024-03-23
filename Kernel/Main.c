@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "ARM64/Machine.h"
+#include "Memory/Virtual.h"
 #include "MemoryLayout.h"
 
 #include "LibKern/String.h"
@@ -17,19 +18,11 @@
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
 #include "Memory/Physical.h"
+#include "Memory/Virtual.h"
 
-/* Kernel & user page table addresses. Defined in Kernel/kernel.ld */
-extern uint64_t _kernel_pgtbl;
-extern uint64_t _user_pgtbl;
-extern uint64_t _K_l2_pgtbl;
-extern uint64_t _U_l2_pgtbl;
-
+/* Kernel physical start & end addresses */
 extern uint64_t kstart;
 extern uint64_t kend;
-
-uint64_t *kernel_pgtbl = &_kernel_pgtbl;
-uint64_t *user_pgtbl = &_user_pgtbl;
-
 
 void kmain(void)
 {
@@ -60,7 +53,7 @@ void kmain(void)
                 wfi();
         }
 
-        /* 1. Initialize BootMem */
+        /* 1. Init BootMem */
         klog("[kmain] Initializing early memory manager...\n");
 
         uint64_t pageCount = bootmem_init(kernel_end);
@@ -69,7 +62,7 @@ void kmain(void)
                 pageCount, (pageCount * PAGE_SIZE) / 1024
         );
 
-        /* 2. Initialize PMM */
+        /* 2. Init PMM */
         klog("[kmain] Initializing physical memory manager...\n");
 
         uint64_t blockCount = init_allocator(
@@ -80,6 +73,9 @@ void kmain(void)
         klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
                 blockCount, blockCount * 2
         );
+
+        /* 3. Init Kernel Page Tables & Enable MMU */
+        init_kernel_pgtbl();
 
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");
