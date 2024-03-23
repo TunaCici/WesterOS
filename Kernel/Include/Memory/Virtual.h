@@ -16,6 +16,13 @@
 
 #include "Memory/PageDef.h"
 
+#define ENTRY_SIZE 512
+
+#define L0_BLOCK_SIZE (1UL << 39) // 512 GiB
+#define L1_BLOCK_SIZE (1UL << 30) // 1 GiB
+#define L2_BLOCK_SIZE (1UL << 21) // 2 MiB
+#define L3_BLOCK_SIZE (1UL << 12) // 4 KiB
+
 /* Hardware page table definition */
 #define PTE_TYPE_MASK		(3 << 0)
 #define PTE_TYPE_FAULT		(0 << 0)
@@ -72,8 +79,8 @@
 #define TCR_EL2_RSVD		(1 << 31 | 1 << 23)
 #define TCR_EL3_RSVD		(1 << 31 | 1 << 23)
 
-inline void init_ttbr(void *ttbr0, void *ttbr1);
-inline void init_tcr(void);
-inline void init_mair(void);
+void init_kernel_pgtbl(void);
+void init_tcr(void);
+void init_mair(void);
 
 #endif /* VIRTUAL_H */
