@@ -46,21 +46,6 @@ SECTIONS
 
                 PROVIDE (init_stktop = .);
 
-                /* define the kernel page table, must be 4K and 4K-aligned*/
-                . = ALIGN(0x1000);
-                PROVIDE (_kernel_pgtbl = .);
-                . += 0x1000;
-
-                /* we also need a user page table*/
-                PROVIDE (_user_pgtbl = .);
-                . += 0x1000;
-
-                /* level 2 pages 4k * 4*/
-                PROVIDE (_K_l2_pgtbl = .);
-                . += 0x4000;
-                PROVIDE (_U_l2_pgtbl = .);
-                . += 0x4000;
-
                 PROVIDE(end_entry = .);
                 . += 0x1000;
         }
