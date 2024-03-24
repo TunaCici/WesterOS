@@ -2,9 +2,14 @@
  * Virtual memory manager for the ARMv8-A architecture
  *
  * References:
+ * https://developer.arm.com/documentation/ddi0487/ka 
  * https://developer.arm.com/documentation/den0024/a/The-Memory-Management-Unit
  * https://github.com/ARM-software/u-boot/blob/master/arch/arm/include/asm/armv8/mmu.h
  * https://lowenware.com/blog/aarch64-mmu-programming/
+ * https://armv8-ref.codingbelief.com/en/
+ *
+ * See below on how overcome ASID's limit of 256 diff tasks in TLB
+ * https://stackoverflow.com/questions/17590146
  *
  * Author: Tuna CICI
  */
@@ -26,6 +31,7 @@ void init_kernel_pgtbl(void)
 {
         uint64_t ttbr1 = 0;
 
+        /* TODO: THIS IS WRONG. FIX COMING */
         /* Identity mapping for the kernel */
         for (uint32_t i = 0; i < ENTRY_SIZE; i++) {
                 l0_kernel_pgtbl[i] = (void *) (i * L0_BLOCK_SIZE);
@@ -47,11 +53,29 @@ void init_kernel_pgtbl(void)
 
 void init_tcr(void)
 {
-        /* TODO */
         uint64_t tcr_el1 = 0;
+        uint64_t reg = 0;
 
+        /* Read TCR_EL1 */
+        MRS("TCR_EL1", tcr_el1);
+        isb();
+
+        /* DS: output addr (OA) and virtual addr (VA) size set to 48-bit */
+        tcr_el1 &= TCR_DS_48BITS;
+
+        /* IPS: intrmdt. output addr (OA) set to ID_AA64MMFR0_EL1.PARange */
+        MRS("ID_AA64MMFR0_EL1", reg);
+        tcr_el1 |= (GET_PARange(reg) << TCR_IPS_SHIFT);
+
+        /* Save TCR_EL1 */
         MSR("TCR_EL1", tcr_el1);
         isb();
+
+        /* DEBUG TCR_EL1 */
+        MRS("TCR_EL1", tcr_el1);
+        isb();
+        klog("[vmm] Intermediate Physical Address Size: 0x%lx\n", (tcr_el1 >> 32) & 0b111);
+
 }
 
 void init_mair(void)

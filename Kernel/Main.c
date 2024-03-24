@@ -76,6 +76,7 @@ void kmain(void)
 
         /* 3. Init Kernel Page Tables & Enable MMU */
         init_kernel_pgtbl();
+        init_tcr();
 
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");

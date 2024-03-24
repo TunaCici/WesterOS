@@ -74,6 +74,9 @@
 #define TCR_TG0_64K		(1 << 14)
 #define TCR_TG0_16K		(2 << 14)
 #define TCR_EPD1_DISABLE	(1 << 23)
+#define TCR_DS_48BITS		~(1UL << 59)
+#define TCR_DS_52BITS		(1UL << 59)
+#define TCR_IPS_SHIFT		(32)
 
 #define TCR_EL1_RSVD		(1 << 31)
 #define TCR_EL2_RSVD		(1 << 31 | 1 << 23)
