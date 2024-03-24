@@ -8,6 +8,8 @@
 
 #pragma once
 
+#define GET_PARange(ID_AA64MMFR0_EL1) (((ID_AA64MMFR0_EL1) >> 0) & 0b1111)
+
 static inline void wfi(void)
 {
     asm volatile("wfi" ::: "memory");
