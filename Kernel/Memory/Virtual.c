@@ -60,12 +60,18 @@ void init_tcr(void)
         MRS("TCR_EL1", tcr_el1);
         isb();
 
-        /* DS: output addr (OA) and virtual addr (VA) size set to 48-bit */
+        /* DS: max. output addr (OA) and virtual addr (VA) size set to 48-bit */
         tcr_el1 &= TCR_DS_48BITS;
 
-        /* IPS: intrmdt. output addr (OA) set to ID_AA64MMFR0_EL1.PARange */
+        /* IPS: effective output addr (OA) set to ID_AA64MMFR0_EL1.PARange */
         MRS("ID_AA64MMFR0_EL1", reg);
         tcr_el1 |= (GET_PARange(reg) << TCR_IPS_SHIFT);
+
+        /* T1SZ: input address (IA) size offset of memory region for TTBR1_EL1 */
+        tcr_el1 |= TCR_T1SZ << TCR_T1SZ_SHIFT;
+
+        /* T0SZ: input address (IA) size offset of memory region for TTBR0_EL1 */
+        tcr_el1 |= TCR_T0SZ << TCR_T0SZ_SHIFT;
 
         /* Save TCR_EL1 */
         MSR("TCR_EL1", tcr_el1);
@@ -74,7 +80,7 @@ void init_tcr(void)
         /* DEBUG TCR_EL1 */
         MRS("TCR_EL1", tcr_el1);
         isb();
-        klog("[vmm] Intermediate Physical Address Size: 0x%lx\n", (tcr_el1 >> 32) & 0b111);
+        klog("[vmm] TCR_EL1: 0x%lx\n", tcr_el1);
 
 }
 
