@@ -4,6 +4,7 @@
  * References:
  * https://developer.arm.com/documentation/ddi0487/ka 
  * https://developer.arm.com/documentation/den0024/a/The-Memory-Management-Unit
+ * https://www.ndss-symposium.org/wp-content/uploads/2017/09/ndss2017_05B-5_Cho_paper.pdf
  * https://github.com/ARM-software/u-boot/blob/master/arch/arm/include/asm/armv8/mmu.h
  * https://lowenware.com/blog/aarch64-mmu-programming/
  * https://armv8-ref.codingbelief.com/en/
@@ -65,13 +66,41 @@ void init_tcr(void)
 
         /* IPS: effective output addr (OA) set to ID_AA64MMFR0_EL1.PARange */
         MRS("ID_AA64MMFR0_EL1", reg);
+        tcr_el1 &= TCR_IPS_CLEAR;
         tcr_el1 |= (GET_PARange(reg) << TCR_IPS_SHIFT);
 
         /* T1SZ: input address (IA) size offset of memory region for TTBR1_EL1 */
-        tcr_el1 |= TCR_T1SZ << TCR_T1SZ_SHIFT;
-
         /* T0SZ: input address (IA) size offset of memory region for TTBR0_EL1 */
+        tcr_el1 |= TCR_T1SZ << TCR_T1SZ_SHIFT;
         tcr_el1 |= TCR_T0SZ << TCR_T0SZ_SHIFT;
+
+        /* HPDN1: enable hierarchical permissions for TTBR1_EL1 */
+        /* HPDN0: enable hierarchical permissions for TTBR0_EL1 */
+        tcr_el1 &= TCR_HPDN1_ENABLE;
+        tcr_el1 &= TCR_HPDN0_ENABLE;
+
+        /* A1: TTBR0 decides the ASID value (?) */
+        tcr_el1 &= TCR_A1_TTBR0;
+
+        /* EPD1: perform table walk on TTBR1 after TLB miss (?) */
+        /* EPD0: perform table walk on TTBR0 after TLB miss (?) */
+        tcr_el1 &= TCR_EPD1_DISABLE;
+        tcr_el1 &= TCR_EPD0_DISABLE;
+
+        /* TG1: granule Size for TTBR1 region */
+        /* TG0: granule Size for TTBR0 region */
+        tcr_el1 &= TCR_TG1_GRANULE_CLEAR;
+        tcr_el1 &= TCR_TG0_GRANULE_CLEAR;
+#if PAGE_SIZE == 4096
+        tcr_el1 |= TCR_TG1_GRANULE_4KB;
+        tcr_el1 |= TCR_TG0_GRANULE_4KB;
+#elif PAGE_SIZE == 16392
+        tcr_el1 |= TCR_TG1_GRANULE_16KB;
+#elif PAGE_SIZE == 65568
+        tcr_el1 |= TCR_TG1_GRANULE_64KB;
+#else
+        return; // we fucked up
+#endif
 
         /* Save TCR_EL1 */
         MSR("TCR_EL1", tcr_el1);
