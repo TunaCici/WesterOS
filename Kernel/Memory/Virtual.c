@@ -23,23 +23,40 @@
 #include "Memory/PageDef.h"
 #include "Memory/Virtual.h"
 
-static void* l0_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
-static void* l1_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
-static void* l2_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
-static void* l3_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
+static void *l0_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
+static void *l1_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
+static void *l2_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
+static void *l3_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
+
+static inline void* _set_next_desc(void *page_desc, void *next_tbl)
+{
+        uint64_t page_desc_bits = (uint64_t) page_desc;
+        uint64_t next_tbl_bits = (uint64_t) next_tbl;
+
+        /* next table address can't be larger then the allowed bit width */
+
+        if (next_tbl_bits >> ARM_TT_NEXT_WIDTH) {
+                return page_desc;
+        }
+
+        page_desc_bits &= ~ARM_TT_NEXT_MASK;
+        page_desc_bits |= (next_tbl_bits << ARM_TT_NEXT_SHIFT);
+
+        page_desc = (void*) page_desc_bits;
+
+        return page_desc;
+}
 
 void init_kernel_pgtbl(void)
 {
         uint64_t ttbr1 = 0;
 
-        /* TODO: THIS IS WRONG. FIX COMING */
-        /* Identity mapping for the kernel */
-        for (uint32_t i = 0; i < ENTRY_SIZE; i++) {
-                l0_kernel_pgtbl[i] = (void *) (i * ARM_TT_L0_SIZE);
-                l1_kernel_pgtbl[i] = (void *) (i * ARM_TT_L1_SIZE); 
-                l2_kernel_pgtbl[i] = (void *) (i * ARM_TT_L2_SIZE); 
-                l3_kernel_pgtbl[i] = (void *) (i * ARM_TT_L3_SIZE); 
-        }
+        void *page_desc = (void*) 0x40480000000004A2ULL;
+        void *next = (void*) (ARM_TT_NEXT_MASK >> ARM_TT_NEXT_SHIFT);
+
+        page_desc = _set_next_desc(page_desc, next);
+
+        klog("[vmm] page_desc: 0x%p\n", page_desc);
 
         klog("[vmm] l0_kernel_pgtbl @ 0x%p\n", l0_kernel_pgtbl);
         klog("[vmm] l1_kernel_pgtbl @ 0x%p\n", l1_kernel_pgtbl);

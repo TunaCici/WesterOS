@@ -85,26 +85,32 @@
 
 /* 4K L1 */
 #define ARM_TT_L1_SIZE          0x0000000040000000ULL /* size of area covered by a tte */
-#define ARM_TT_L1_OFFMASK       0x000000003fffffffULL /* offset within an L1 entry */
+#define ARM_TT_L1_OFFMASK       0x000000003FFFFFFFULL /* offset within an L1 entry */
 #define ARM_TT_L1_SHIFT         30ULL                 /* page descriptor shift */
-#define ARM_TT_L1_INDEX_MASK    0x0000007fc0000000ULL /* mask for getting index into L1 table from VA */
+#define ARM_TT_L1_INDEX_MASK    0x0000007FC0000000ULL /* mask for getting index into L1 table from VA */
 
 /* 4K L2 */
 #define ARM_TT_L2_SIZE          0x0000000000200000ULL /* size of area covered by a tte */
-#define ARM_TT_L2_OFFMASK       0x00000000001fffffULL /* offset within an L2 entry */
+#define ARM_TT_L2_OFFMASK       0x00000000001FFFFFULL /* offset within an L2 entry */
 #define ARM_TT_L2_SHIFT         21ULL                 /* page descriptor shift */
-#define ARM_TT_L2_INDEX_MASK    0x000000003fe00000ULL /* mask for getting index in L2 table from VA */
+#define ARM_TT_L2_INDEX_MASK    0x000000003FE00000ULL /* mask for getting index in L2 table from VA */
 
 /* 4K L3 */
 #define ARM_TT_L3_SIZE          0x0000000000001000ULL /* size of area covered by a tte */
-#define ARM_TT_L3_OFFMASK       0x0000000000000fffULL /* offset within L3 PTE */
+#define ARM_TT_L3_OFFMASK       0x0000000000000FFFULL /* offset within L3 PTE */
 #define ARM_TT_L3_SHIFT         12ULL                 /* page descriptor shift */
-#define ARM_TT_L3_INDEX_MASK    0x00000000001ff000ULL /* mask for page descriptor index */
+#define ARM_TT_L3_INDEX_MASK    0x00000000001FF000ULL /* mask for page descriptor index */
+
+#define ARM_TT_NEXT_SHIFT       12ULL
+#define ARM_TT_NEXT_WIDTH       36ULL
+#define ARM_TT_NEXT_MASK        0x0000FFFFFFFFF000ULL
 
 /* some sugar for getting pointers to page tables and entries */
 #define L1_TABLE_INDEX(va) (((va) & ARM_TT_L1_INDEX_MASK) >> ARM_TT_L1_SHIFT)
 #define L2_TABLE_INDEX(va) (((va) & ARM_TT_L2_INDEX_MASK) >> ARM_TT_L2_SHIFT)
 #define L3_TABLE_INDEX(va) (((va) & ARM_TT_L3_INDEX_MASK) >> ARM_TT_L3_SHIFT)
+
+#define TABLE_DESC_NEXT(tbl) (((tbl) & ARM_TT_NEXT_MASK) >> ARM_TT_NEXT_SHIFT)
 
 /*
  * Translation Control Register (TCR)
