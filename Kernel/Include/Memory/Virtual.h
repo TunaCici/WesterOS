@@ -19,42 +19,92 @@
 
 #define ENTRY_SIZE 512
 
-#define L0_BLOCK_SIZE (1UL << 39) // 512 GiB
-#define L1_BLOCK_SIZE (1UL << 30) // 1 GiB
-#define L2_BLOCK_SIZE (1UL << 21) // 2 MiB
-#define L3_BLOCK_SIZE (1UL << 12) // 4 KiB
+/*
+ * 4KB granule size:
+ *
+ * Level 0 Translation Table Entry
+ *
+ *  63 62 61 60  59 58   52 51  48 47                  12 11    2 1 0
+ * +--+-----+--+---+-------+------+----------------------+-------+-+-+
+ * |NS|  AP |XN|PXN|ignored| zero | L1TableOutputAddress |ignored|1|V|
+ * +--+-----+--+---+-------+------+----------------------+-------+-+-+
+ *
+ * Level 1 Translation Table Entry
+ *
+ *  63 62 61 60  59 58   52 51  48 47                  12 11    2 1 0
+ * +--+-----+--+---+-------+------+----------------------+-------+-+-+
+ * |NS|  AP |XN|PXN|ignored| zero | L2TableOutputAddress |ignored|1|V|
+ * +--+-----+--+---+-------+------+----------------------+-------+-+-+
+ *
+ * Level 1 Translation Block Entry
+ *
+ *  63 59 58  55 54  53   52 51  48 47                  30 29  12 11 10 9  8 7  6  5 4     2 1 0
+ * +-----+------+--+---+----+------+----------------------+------+--+--+----+----+--+-------+-+-+
+ * | ign |sw use|XN|PXN|HINT| zero | OutputAddress[47:30] | zero |nG|AF| SH | AP |NS|AttrIdx|0|V|
+ * +-----+------+--+---+----+------+----------------------+------+--+--+----+----+--+-------+-+-+
+ *
+ * Level 2 Translation Table Entry
+ *
+ *  63 62 61 60  59 58   52 51  48 47                  12 11    2 1 0
+ * +--+-----+--+---+-------+------+----------------------+-------+-+-+
+ * |NS|  AP |XN|PXN|ignored| zero | L3TableOutputAddress |ignored|1|V|
+ * +--+-----+--+---+-------+------+----------------------+-------+-+-+
+ *
+ * Level 2 Translation Block Entry
+ *
+ *  63 59 58  55 54  53   52 51  48 47                  21 20  12 11 10 9  8 7  6  5 4     2 1 0
+ * +-----+------+--+---+----+------+----------------------+------+--+--+----+----+--+-------+-+-+
+ * | ign |sw use|XN|PXN|HINT| zero | OutputAddress[47:21] | zero |nG|AF| SH | AP |NS|AttrIdx|0|V|
+ * +-----+------+--+---+----+------+----------------------+------+--+--+----+----+--+-------+-+-+
+ *
+ * Level 3 Page table entries
+ *
+ *  63 59 58  55 54  53   52 51  48 47                  12 11 10 9  8 7  6  5 4     2 1 0
+ * +-----+------+--+---+----+------+----------------------+--+--+----+----+--+-------+-+-+
+ * | ign |sw use|XN|PXN|HINT| zero | OutputAddress[47:12] |nG|AF| SH | AP |NS|AttrIdx|1|V|
+ * +-----+------+--+---+----+------+----------------------+--+--+----+----+--+-------+-+-+
+ *
+ * where:
+ *   XN:      eXecute Never bit
+ *   PXN:     Privilege eXecute Never bit
+ *   HINT:    16 entry continuguous output hint
+ *   nG:      notGlobal bit
+ *   AF:      Access Flag bit
+ *   SH:      Shareability field
+ *   AP:      access protection
+ *   NS:      Non-Secure bit
+ *   AttrIdx: Memory Attribute Index
+ *   V:       Valid entry bit
+ */
 
-/* Hardware page table definition */
-#define PTE_TYPE_MASK           (3 << 0)
-#define PTE_TYPE_FAULT          (0 << 0)
-#define PTE_TYPE_TABLE          (3 << 0)
-#define PTE_TYPE_PAGE           (3 << 0)
-#define PTE_TYPE_BLOCK          (1 << 0)
-#define PTE_TYPE_VALID          (1 << 0)
+/* 4K L0 */
+#define ARM_TT_L0_SIZE          0x0000008000000000ULL /* size of area covered by a tte */
+#define ARM_TT_L0_OFFMASK       0x0000007FFFFFFFFFULL /* offset within an L0 entry */
+#define ARM_TT_L0_SHIFT         39ULL                 /* page descriptor shift */
+#define ARM_TT_L0_INDEX_MASK    0x0000FF8000000000ULL /* mask for getting index in L0 table from VA */
 
-#define PTE_TABLE_PXN           (1UL << 59)
-#define PTE_TABLE_XN            (1UL << 60)
-#define PTE_TABLE_AP            (1UL << 61)
-#define PTE_TABLE_NS            (1UL << 63)
+/* 4K L1 */
+#define ARM_TT_L1_SIZE          0x0000000040000000ULL /* size of area covered by a tte */
+#define ARM_TT_L1_OFFMASK       0x000000003fffffffULL /* offset within an L1 entry */
+#define ARM_TT_L1_SHIFT         30ULL                 /* page descriptor shift */
+#define ARM_TT_L1_INDEX_MASK    0x0000007fc0000000ULL /* mask for getting index into L1 table from VA */
 
-/* Block */
-#define PTE_BLOCK_MEMTYPE(x)    ((x) << 2)
-#define PTE_BLOCK_NS            (1 << 5)
-#define PTE_BLOCK_NON_SHARE     (0 << 8)
-#define PTE_BLOCK_OUTER_SHARE   (2 << 8)
-#define PTE_BLOCK_INNER_SHARE   (3 << 8)
-#define PTE_BLOCK_AF            (1 << 10)
-#define PTE_BLOCK_NG            (1 << 11)
-#define PTE_BLOCK_PXN           (UL(1) << 53)
-#define PTE_BLOCK_UXN           (UL(1) << 54)
+/* 4K L2 */
+#define ARM_TT_L2_SIZE          0x0000000000200000ULL /* size of area covered by a tte */
+#define ARM_TT_L2_OFFMASK       0x00000000001fffffULL /* offset within an L2 entry */
+#define ARM_TT_L2_SHIFT         21ULL                 /* page descriptor shift */
+#define ARM_TT_L2_INDEX_MASK    0x000000003fe00000ULL /* mask for getting index in L2 table from VA */
 
-/* AttrIndx[2:0] */
-#define PMD_ATTRINDX(t)         ((t) << 2)
-#define PMD_ATTRINDX_MASK       (7 << 2)
-#define PMD_ATTRMASK            (PTE_BLOCK_PXN          | \
-                                 PTE_BLOCK_UXN          | \
-                                 PMD_ATTRINDX_MASK      | \
-                                 PTE_TYPE_VALID)
+/* 4K L3 */
+#define ARM_TT_L3_SIZE          0x0000000000001000ULL /* size of area covered by a tte */
+#define ARM_TT_L3_OFFMASK       0x0000000000000fffULL /* offset within L3 PTE */
+#define ARM_TT_L3_SHIFT         12ULL                 /* page descriptor shift */
+#define ARM_TT_L3_INDEX_MASK    0x00000000001ff000ULL /* mask for page descriptor index */
+
+/* some sugar for getting pointers to page tables and entries */
+#define L1_TABLE_INDEX(va) (((va) & ARM_TT_L1_INDEX_MASK) >> ARM_TT_L1_SHIFT)
+#define L2_TABLE_INDEX(va) (((va) & ARM_TT_L2_INDEX_MASK) >> ARM_TT_L2_SHIFT)
+#define L3_TABLE_INDEX(va) (((va) & ARM_TT_L3_INDEX_MASK) >> ARM_TT_L3_SHIFT)
 
 /*
  * Translation Control Register (TCR)

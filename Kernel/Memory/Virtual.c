@@ -35,10 +35,10 @@ void init_kernel_pgtbl(void)
         /* TODO: THIS IS WRONG. FIX COMING */
         /* Identity mapping for the kernel */
         for (uint32_t i = 0; i < ENTRY_SIZE; i++) {
-                l0_kernel_pgtbl[i] = (void *) (i * L0_BLOCK_SIZE);
-                l1_kernel_pgtbl[i] = (void *) (i * L1_BLOCK_SIZE); 
-                l2_kernel_pgtbl[i] = (void *) (i * L2_BLOCK_SIZE); 
-                l3_kernel_pgtbl[i] = (void *) (i * L3_BLOCK_SIZE); 
+                l0_kernel_pgtbl[i] = (void *) (i * ARM_TT_L0_SIZE);
+                l1_kernel_pgtbl[i] = (void *) (i * ARM_TT_L1_SIZE); 
+                l2_kernel_pgtbl[i] = (void *) (i * ARM_TT_L2_SIZE); 
+                l3_kernel_pgtbl[i] = (void *) (i * ARM_TT_L3_SIZE); 
         }
 
         klog("[vmm] l0_kernel_pgtbl @ 0x%p\n", l0_kernel_pgtbl);
@@ -69,8 +69,8 @@ void init_tcr(void)
         tcr_el1 &= TCR_IPS_CLEAR;
         tcr_el1 |= (GET_PARange(reg) << TCR_IPS_SHIFT);
 
-        /* T1SZ: input address (IA) size offset of memory region for TTBR1_EL1 */
-        /* T0SZ: input address (IA) size offset of memory region for TTBR0_EL1 */
+        /* T1SZ: input address (IA) size offset of mem region for TTBR1_EL1 */
+        /* T0SZ: input address (IA) size offset of mem region for TTBR0_EL1 */
         tcr_el1 |= TCR_T1SZ << TCR_T1SZ_SHIFT;
         tcr_el1 |= TCR_T0SZ << TCR_T0SZ_SHIFT;
 
@@ -87,8 +87,8 @@ void init_tcr(void)
         tcr_el1 &= TCR_EPD1_DISABLE;
         tcr_el1 &= TCR_EPD0_DISABLE;
 
-        /* TG1: granule Size for TTBR1 region */
-        /* TG0: granule Size for TTBR0 region */
+        /* TG1: granule size for TTBR1 region */
+        /* TG0: granule size for TTBR0 region */
         tcr_el1 &= TCR_TG1_GRANULE_CLEAR;
         tcr_el1 &= TCR_TG0_GRANULE_CLEAR;
 #if PAGE_SIZE == 4096
