@@ -28,35 +28,38 @@ static void *l1_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
 static void *l2_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
 static void *l3_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
-static inline void* _set_next_desc(void *page_desc, void *next_tbl)
-{
-        uint64_t page_desc_bits = (uint64_t) page_desc;
-        uint64_t next_tbl_bits = (uint64_t) next_tbl;
+#define VALIDATE_ENTRY(entry) ((entry) | ARM_TE_VALID_MASK)
+#define INVALIDATE_ENTRY(entry) ((entry) & ~ARM_TE_VALID_MASK)
 
-        /* next table address can't be larger then the allowed bit width */
+#define TBL_PXN_ENABLE(tbl) ((tbl) | ARM_TT_PXN_MASK)
+#define TBL_PXN_DISABLE(tbl) ((tbl) & ~ARM_TT_PXN_MASK)
 
-        if (next_tbl_bits >> ARM_TT_NEXT_WIDTH) {
-                return page_desc;
-        }
+#define TBL_XN_ENABLE(tbl) ((tbl) | ARM_TT_XN_MASK)
+#define TBL_XN_DISABLE(tbl) ((tbl) & ~ARM_TT_XN_MASK)
 
-        page_desc_bits &= ~ARM_TT_NEXT_MASK;
-        page_desc_bits |= (next_tbl_bits << ARM_TT_NEXT_SHIFT);
+#define TBL_SET_NEXT(tbl, next_tbl) \
+        ((void *)(((uint64_t)(tbl) & ~ARM_TT_NEXT_MASK) | \
+                (((uint64_t)(next_tbl) << ARM_TT_NEXT_SHIFT))))
+#define TBL_CLR_NEXT(tbl, next_tbl) \
+        ((void *)(((uint64_t)(tbl) & ~ARM_TT_NEXT_MASK)))
 
-        page_desc = (void*) page_desc_bits;
-
-        return page_desc;
-}
+#define TBL_SET_AP(tbl, ap) \
+        ((void *)(((uint64_t)(tbl) & ~ARM_TT_AP_MASK) | \
+                (((uint64_t)(next_tbl) << ARM_TT_AP_SHIFT))))
+#define TBL_CLR_AP(tbl, ap) \
+        ((void *)(((uint64_t)(tbl) & ~ARM_TT_AP_MASK)))
 
 void init_kernel_pgtbl(void)
 {
         uint64_t ttbr1 = 0;
 
-        void *page_desc = (void*) 0x40480000000004A2ULL;
+        void *entry = (void*) 0x40480000000004A3ULL;
         void *next = (void*) (ARM_TT_NEXT_MASK >> ARM_TT_NEXT_SHIFT);
+        
+        entry = TBL_SET_NEXT(entry, next);
+        entry = TBL_CLR_AP(entry, next);
 
-        page_desc = _set_next_desc(page_desc, next);
-
-        klog("[vmm] page_desc: 0x%p\n", page_desc);
+        klog("[vmm] entry: 0x%p\n", entry);
 
         klog("[vmm] l0_kernel_pgtbl @ 0x%p\n", l0_kernel_pgtbl);
         klog("[vmm] l1_kernel_pgtbl @ 0x%p\n", l1_kernel_pgtbl);

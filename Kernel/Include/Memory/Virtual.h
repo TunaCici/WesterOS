@@ -57,7 +57,7 @@
  * | ign |sw use|XN|PXN|HINT| zero | OutputAddress[47:21] | zero |nG|AF| SH | AP |NS|AttrIdx|0|V|
  * +-----+------+--+---+----+------+----------------------+------+--+--+----+----+--+-------+-+-+
  *
- * Level 3 Page table entries
+ * Level 3 Translation Page entries
  *
  *  63 59 58  55 54  53   52 51  48 47                  12 11 10 9  8 7  6  5 4     2 1 0
  * +-----+------+--+---+----+------+----------------------+--+--+----+----+--+-------+-+-+
@@ -101,9 +101,29 @@
 #define ARM_TT_L3_SHIFT         12ULL                 /* page descriptor shift */
 #define ARM_TT_L3_INDEX_MASK    0x00000000001FF000ULL /* mask for page descriptor index */
 
+#define ARM_TE_VALID_SHIFT      0ULL
+#define ARM_TE_VALID_WIDTH      1ULL
+#define ARM_TE_VALID_MASK        0x0000000000000001ULL
+
+#define ARM_TE_TYPE_SHIFT       1ULL
+#define ARM_TE_TYPE_WIDTH       1ULL
+#define ARM_TE_TYPE_MASK        0x0000000000000002ULL
+
 #define ARM_TT_NEXT_SHIFT       12ULL
 #define ARM_TT_NEXT_WIDTH       36ULL
 #define ARM_TT_NEXT_MASK        0x0000FFFFFFFFF000ULL
+
+#define ARM_TT_PXN_SHIFT        59ULL
+#define ARM_TT_PXN_WIDTH        1ULL
+#define ARM_TT_PXN_MASK         0x00800000000000000ULL
+
+#define ARM_TT_XN_SHIFT         60ULL
+#define ARM_TT_XN_WIDTH         1ULL
+#define ARM_TT_XN_MASK          0x01000000000000000ULL
+
+#define ARM_TT_AP_SHIFT         61ULL
+#define ARM_TT_AP_WIDTH         2ULL
+#define ARM_TT_AP_MASK          0x06000000000000000ULL
 
 /* some sugar for getting pointers to page tables and entries */
 #define L1_TABLE_INDEX(va) (((va) & ARM_TT_L1_INDEX_MASK) >> ARM_TT_L1_SHIFT)
@@ -111,6 +131,8 @@
 #define L3_TABLE_INDEX(va) (((va) & ARM_TT_L3_INDEX_MASK) >> ARM_TT_L3_SHIFT)
 
 #define TABLE_DESC_NEXT(tbl) (((tbl) & ARM_TT_NEXT_MASK) >> ARM_TT_NEXT_SHIFT)
+#define TABLE_DESC_VALID(tbl) (((tbl & RM_TT_VALID_MASK) >> ARM_TT_VALID_SHIFT))
+#define TABLE_DESC_TYPE(tbl) (((tbl) & ARM_TT_TYPE_MASK) >> ARM_TT_TYPE_SHIFT)
 
 /*
  * Translation Control Register (TCR)
