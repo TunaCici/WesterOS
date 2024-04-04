@@ -18,9 +18,6 @@
 
 extern void kmain(void);
 
-extern uint64_t kstart;
-extern uint64_t kend;
-
 void _halt(const char *s)
 {
         klog("Halting due to: %s", s);
@@ -37,10 +34,6 @@ void start(void)
         /* TODO: Replace this with a DTB parser */
         const char      *_cpuModel  = "Cortex A-72";
         const uint32_t  _coreCount =  2u;
-
-        /* Symbols. Defined in Kernel/kernel.ld */
-        const uint64_t *kernelBase = (uint64_t*) &kstart;
-        const uint64_t *kernelEnd = (uint64_t*) &kend;
 
         klog("WesterOS early boot stage\n");
         klog("Running sanity checks...\n");
@@ -129,9 +122,6 @@ void start(void)
                 kprintf("Unmasked\n");
         }
 
-        MRS("VBAR_EL1", val64);
-        klog("---- Vector Table: 0x%lx\n", val64);
-
         /* -------- Machine Layout -------- */
         klog("QEMU ARM Virt Machine memory layout:\n");
 
@@ -163,13 +153,6 @@ void start(void)
                 DTB_START, DTB_END
         );
 
-        klog ("---- Kernel: 0x%p - 0x%p (system)\n",
-                kernelBase,
-                kernelEnd
-        );
-
-        val64 = (kernelEnd - kernelBase);
-        klog("WesterOS kernel size: %lu bytes\n", val64);
 
         klog("Everything's OK. Calling the Kernel now...\n");
         kmain();

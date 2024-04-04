@@ -25,10 +25,6 @@ _start:
 	ldr     x2, =end_entry
 	mov     x3, #0x00
 
-	/* Register vector tables */
-	adr	x0, vector_table
-	msr	vbar_el1, x0
-
 	/* Enable access to FPU & Advanced SIMD (NEON) */
 	mrs	x0, CPACR_EL1
 	orr	x0, x0, #(0x3 << 20)

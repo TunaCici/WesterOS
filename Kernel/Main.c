@@ -20,14 +20,12 @@
 #include "Memory/Physical.h"
 #include "Memory/Virtual.h"
 
-/* Kernel physical start & end addresses */
-extern uint64_t kstart;
-extern uint64_t kend;
+extern uint64_t kend; /* in Kernel/kerne.ld */
+extern uint64_t vector_table; /* in Kernel/Arch/ARM64/Vector.S */
 
 void kmain(void)
 {
-        volatile const uint8_t *kernel_start = (uint8_t*) &kstart;
-        volatile const uint8_t *kernel_end = (uint8_t*) &kend;
+        const void *kernel_end = &kend;
 
         uint64_t mem_start = 0x0;
         uint64_t mem_end = 0x0;
@@ -52,6 +50,10 @@ void kmain(void)
                         (BM_ARENA_SIZE * PAGE_SIZE) / (1024 * 1024));
                 wfi();
         }
+
+        /* X. Setup vector tables */
+        MSR("vbar_el1", vector_table);
+        isb();
 
         /* 1. Init BootMem */
         klog("[kmain] Initializing early memory manager...\n");
