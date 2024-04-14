@@ -126,7 +126,7 @@
 #define ARM_TT_AP_MASK          0x6000000000000000ULL
 
 #define ARM_TT_NS_SHIFT         63ULL
-#define ARM_TT_NS_WIDTH         2ULL
+#define ARM_TT_NS_WIDTH         1ULL
 #define ARM_TT_NS_MASK          0x8000000000000000ULL
 
 #define ARM_TB_AIDX_SHIFT       2ULL
