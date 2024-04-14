@@ -14,9 +14,9 @@ KERNEL_VMA_BASE = 0xFFFF000000000000; /* TTBR1_EL1 lower boundary */
 SECTIONS
 {
         /*
-         * The entry point, before enabling paging.
-         * The code to enable paging needs to have the same VA & PA.
-         * Only Entry.S and Start.c run in this initial setting.
+         * The entry point, before enabling paging
+         * The code to enable paging needs to have the same VA & PA
+         * Only Entry.S and Start.c run in this initial setting
          */
         
         /* QEMU loads DTB at 0x00000000_40000000. So we skip over it (1MiB) */
@@ -58,7 +58,8 @@ SECTIONS
          * https://sourceware.org/binutils/docs/ld/Basic-Script-Concepts.html
          */
         
-        /* . = KERNEL_VMA_BASE; */ 
+        /* . = KERNEL_VMA_BASE; */
+        PROVIDE (kernel_vma_base = .);
 
         .text : AT(ADDR(.start_sec) + SIZEOF(.start_sec))
         {

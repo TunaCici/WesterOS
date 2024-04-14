@@ -103,7 +103,7 @@
 
 #define ARM_TE_VALID_SHIFT      0ULL
 #define ARM_TE_VALID_WIDTH      1ULL
-#define ARM_TE_VALID_MASK        0x0000000000000001ULL
+#define ARM_TE_VALID_MASK       0x0000000000000001ULL
 
 #define ARM_TE_TYPE_SHIFT       1ULL
 #define ARM_TE_TYPE_WIDTH       1ULL
@@ -115,17 +115,66 @@
 
 #define ARM_TT_PXN_SHIFT        59ULL
 #define ARM_TT_PXN_WIDTH        1ULL
-#define ARM_TT_PXN_MASK         0x00800000000000000ULL
+#define ARM_TT_PXN_MASK         0x0800000000000000ULL
 
 #define ARM_TT_XN_SHIFT         60ULL
 #define ARM_TT_XN_WIDTH         1ULL
-#define ARM_TT_XN_MASK          0x01000000000000000ULL
+#define ARM_TT_XN_MASK          0x1000000000000000ULL
 
 #define ARM_TT_AP_SHIFT         61ULL
 #define ARM_TT_AP_WIDTH         2ULL
-#define ARM_TT_AP_MASK          0x06000000000000000ULL
+#define ARM_TT_AP_MASK          0x6000000000000000ULL
+
+#define ARM_TT_NS_SHIFT         63ULL
+#define ARM_TT_NS_WIDTH         2ULL
+#define ARM_TT_NS_MASK          0x8000000000000000ULL
+
+#define ARM_TB_AIDX_SHIFT       2ULL
+#define ARM_TB_AIDX_WIDTH       3ULL
+#define ARM_TB_AIDX_MASK        0x000000000000001CULL
+
+#define ARM_TB_NS_SHIFT         5ULL
+#define ARM_TB_NS_WIDTH         1ULL
+#define ARM_TB_NS_MASK          0x0000000000000020ULL
+
+#define ARM_TB_AP_SHIFT         6ULL
+#define ARM_TB_AP_WIDTH         2ULL
+#define ARM_TB_AP_MASK          0x00000000000000C0ULL
+
+#define ARM_TB_SH_SHIFT         8ULL
+#define ARM_TB_SH_WIDTH         2ULL
+#define ARM_TB_SH_MASK          0x0000000000000300ULL
+
+#define ARM_TB_AF_SHIFT         10ULL
+#define ARM_TB_AF_WIDTH         1ULL
+#define ARM_TB_AF_MASK          0x0000000000000400ULL
+
+#define ARM_TB_NG_SHIFT         11ULL
+#define ARM_TB_NG_WIDTH         1ULL
+#define ARM_TB_NG_MASK          0x0000000000000800ULL
+
+#define ARM_TB_L1NEXT_SHIFT     30ULL
+#define ARM_TB_L1NEXT_WIDTH     18ULL
+#define ARM_TB_L1NEXT_MASK      0x0000FFFFC0000000ULL
+
+#define ARM_TB_L2NEXT_SHIFT     21ULL
+#define ARM_TB_L2NEXT_WIDTH     27ULL
+#define ARM_TB_L2NEXT_MASK      0x0000FFFFFFE00000ULL
+
+#define ARM_TB_HINT_SHIFT       52ULL
+#define ARM_TB_HINT_WIDTH       1ULL
+#define ARM_TB_HINT_MASK        0x0010000000000000ULL
+
+#define ARM_TB_PXN_SHIFT        53ULL
+#define ARM_TB_PXN_WIDTH        1ULL
+#define ARM_TB_PXN_MASK         0x0020000000000000ULL
+
+#define ARM_TB_XN_SHIFT         54ULL
+#define ARM_TB_XN_WIDTH         1ULL
+#define ARM_TB_XN_MASK          0x0040000000000000ULL
 
 /* some sugar for getting pointers to page tables and entries */
+#define L0_TABLE_INDEX(va) (((va) & ARM_TT_L0_INDEX_MASK) >> ARM_TT_L0_SHIFT)
 #define L1_TABLE_INDEX(va) (((va) & ARM_TT_L1_INDEX_MASK) >> ARM_TT_L1_SHIFT)
 #define L2_TABLE_INDEX(va) (((va) & ARM_TT_L2_INDEX_MASK) >> ARM_TT_L2_SHIFT)
 #define L3_TABLE_INDEX(va) (((va) & ARM_TT_L3_INDEX_MASK) >> ARM_TT_L3_SHIFT)
@@ -207,8 +256,6 @@
 #define TCR_DS_SHIFT            59ULL
 #define TCR_DS_48BITS           ~(1ULL << TCR_DS_SHIFT)
 #define TCR_DS_52BITS           (1ULL << TCR_DS_SHIFT)
-
-
 
 void init_kernel_pgtbl(void);
 void init_tcr(void);
