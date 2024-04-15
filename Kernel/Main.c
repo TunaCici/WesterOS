@@ -52,7 +52,7 @@ void kmain(void)
         }
 
         /* X. Setup vector tables */
-        MSR("vbar_el1", vector_table);
+        MSR("VBAR_EL1", vector_table);
         isb();
 
         /* 1. Init BootMem */
