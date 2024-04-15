@@ -18,6 +18,8 @@
 #include <stdint.h>
 
 #include "ARM64/Machine.h"
+#include "ARM64/Memory.h"
+
 #include "LibKern/Console.h"
 
 #include "Memory/PageDef.h"
@@ -29,69 +31,10 @@ static uint64_t l1_kernel_pgtbl[ENTRY_SIZE] __attribute__((aligned(PAGE_SIZE)));
 
 extern void *kernel_vma_base;
 
-/* Common */
-#define ENTRY_VALID(entry) ((entry) | ARM_TE_VALID_MASK)
-#define EBTRY_INVALID(entry) ((entry) & ~ARM_TE_VALID_MASK)
-
-#define ENTRY_TABLE(entry) ((entry) | ARM_TE_TYPE_MASK)
-#define ENTRY_BLOCK(entry) ((entry) & ~ARM_TE_TYPE_MASK)
-#define ENTRY_PAGE(entry) TYPE_BLOCK(entry)
-
-/* Table */
-#define TBL_SET_NEXT(tbl, next) \
-        (((uint64_t)(tbl) & ~ARM_TT_NEXT_MASK) | \
-                (((uint64_t)(next) << ARM_TT_NEXT_SHIFT)))
-#define TBL_SET_PXN(tbl, pxn) \
-        (((uint64_t)(tbl) & ~ARM_TT_PXN_MASK) | \
-                (((uint64_t)(pxn) << ARM_TT_PXN_SHIFT)))
-#define TBL_SET_XN(tbl, xn) \
-        (((uint64_t)(tbl) & ~ARM_TT_XN_MASK) | \
-                (((uint64_t)(xn) << ARM_TT_XN_SHIFT)))
-#define TBL_SET_AP(tbl, ap) \
-        (((uint64_t)(tbl) & ~ARM_TT_AP_MASK) | \
-                (((uint64_t)(ap) << ARM_TT_AP_SHIFT)))
-#define TBL_SET_NS(tbl, ns) \
-        (((uint64_t)(tbl) & ~ARM_TT_NS_MASK) | \
-                (((uint64_t)(ns) << ARM_TT_NS_SHIFT)))
-
-/* Block */
-#define BLK_SET_AIDX(blk, aidx) \
-        (((uint64_t)(blk) & ~ARM_TB_AIDX_MASK) | \
-                (((uint64_t)(aidx) << ARM_TB_AIDX_SHIFT)))
-#define BLK_SET_NS(blk, ns) \
-        (((uint64_t)(blk) & ~ARM_TB_NS_MASK) | \
-                (((uint64_t)(ns) << ARM_TB_NS_SHIFT)))
-#define BLK_SET_AP(blk, ap) \
-        (((uint64_t)(blk) & ~ARM_TB_AP_MASK) | \
-                (((uint64_t)(ap) << ARM_TB_AP_SHIFT)))
-#define BLK_SET_SH(blk, sh) \
-        (((uint64_t)(blk) & ~ARM_TB_SH_MASK) | \
-                (((uint64_t)(sh) << ARM_TB_SH_SHIFT)))
-#define BLK_SET_AF(blk, af) \
-        (((uint64_t)(blk) & ~ARM_TB_AF_MASK) | \
-                (((uint64_t)(af) << ARM_TB_AF_SHIFT)))
-#define BLK_SET_NG(blk, ng) \
-        (((uint64_t)(blk) & ~ARM_TB_NG_MASK) | \
-                (((uint64_t)(ng) << ARM_TB_NG_SHIFT)))
-#define BLK_SET_L1_NEXT(blk, next) \
-        (((uint64_t)(blk) & ~ARM_TB_L1NEXT_MASK) | \
-                (((uint64_t)(next) << ARM_TB_L1NEXT_SHIFT)))
-#define BLK_SET_L2_NEXT(blk, next) \
-        (((uint64_t)(blk) & ~ARM_TB_L2NEXT_MASK) | \
-                (((uint64_t)(next) << ARM_TB_L2NEXT_SHIFT)))
-#define BLK_SET_HINT(blk, hint) \
-        (((uint64_t)(blk) & ~ARM_TB_HINT_MASK) | \
-                (((uint64_t)(hint) << ARM_TB_HINT_SHIFT)))
-#define BLK_SET_PXN(blk, pxn) \
-        (((uint64_t)(blk) & ~ARM_TB_PXN_MASK) | \
-                (((uint64_t)(pxn) << ARM_TB_PXN_SHIFT)))             
-#define BLK_SET_XN(blk, xn) \
-        (((uint64_t)(blk) & ~ARM_TB_XN_MASK) | \
-                (((uint64_t)(xn) << ARM_TB_XN_SHIFT)))   
-
 void init_kernel_pgtbl(void)
 {
         uint64_t ttbr1 = 0;
+
         /* Level 1 */
         for (int i = 0; i < ENTRY_SIZE; i++) {
                 uint64_t blk = 0;
