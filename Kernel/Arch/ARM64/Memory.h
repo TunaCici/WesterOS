@@ -13,6 +13,7 @@
 #ifndef ARM64_MEMORY_H
 #define ARM64_MEMORY_H
 
+#define GRANULE_SIZE 4096 /* bytes */
 #define ENTRY_SIZE 512
 
 /*

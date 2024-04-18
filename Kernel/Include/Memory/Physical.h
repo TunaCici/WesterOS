@@ -20,6 +20,8 @@
 
 #include "Memory/PageDef.h"
 
+#define MAX_ORDER 10 /* Block size: 2^0 ... 2^(MAX_ORDER - 1) * PAGE_SIZE */
+
 #define SIZEOF_BLOCK(order) ((0x1 << (order)) * PAGE_SIZE ) /* Bytes */
 
 #define BUDDY_MARK_USED(map, idx) (map[idx / 8] |= (1 << (idx % 8)))
