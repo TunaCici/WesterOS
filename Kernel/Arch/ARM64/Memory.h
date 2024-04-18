@@ -13,8 +13,6 @@
 #ifndef ARM64_MEMORY_H
 #define ARM64_MEMORY_H
 
-#include <stdint.h>
-
 #define ENTRY_SIZE 512
 
 /*
