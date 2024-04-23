@@ -125,6 +125,25 @@ TODO: Overall OS specifications. What is what and the future goals.
 
 TODO: How does everything starts? Why the things I do are the way they are?
 
+State of ARM64 machine (e.g., registers) right before `kmain()`
+
+* VBAR: `0xffff000000000000`
+* Kernel Page Tables
+  * Level 0 @ `0x40101000`
+    * Array of 512 uint64_t's
+    * 0th : `0x`
+    * 1...511th: `0x0`
+  * Level 1 @ `0x40102000`
+    * Array of 512 uint64_t's
+    * 0th: `0x`
+    * 1...511th: `0x0`
+* MAIR_EL1: `0x0`
+* TCR_EL1: `0x480100010`
+* TTBR0_EL1: `0x0`
+* TTBR1_EL1: `0x40101000`
+* SCTLR_EL1: `0xc50839`
+
+
 ### Kernel
 
 WesterOS kernel follows a microkernel design. Different people/orgs have

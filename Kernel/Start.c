@@ -9,12 +9,29 @@
 
 #include "ARM64/Machine.h"
 #include "ARM64/RegisterSet.h"
+#include "ARM64/Memory.h"
 
 #include "MemoryLayout.h"
 
-extern void kmain(void);
+/* in Main.c */
+extern void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
+                  void* dtb, uint32_t dtb_size);
 
-void _utoa(uint64_t uval, char *buff, uint8_t base) {
+/* in Kernel/kernel.ld */
+extern uint64_t kstart;
+extern uint64_t kend;
+extern uint64_t kvma_base;
+
+/* in Kernel/Arch/ARM64/Vector.S */
+extern uint64_t vector_table; 
+
+/* Kernel parameters */
+uint64_t l0_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
+uint64_t l1_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
+uint64_t vector_tbl = (uint64_t) (&vector_table);
+
+void _utoa(uint64_t uval, char *buff, uint8_t base)
+{
         const char digits[] = "0123456789ABCDEF";
         int i = 0;
 
@@ -33,17 +50,12 @@ void _utoa(uint64_t uval, char *buff, uint8_t base) {
         }
 }
 
-void _uart_putc(const int c)
-{
-        volatile uint8_t *uart0 = (uint8_t*) PL011_BASE;
-        *uart0 = c;
-}
-
-
 void _puts(const char *s)
 {
+        volatile uint8_t *uart0 = (uint8_t*) PL011_BASE;
+
         while (*s != '\0') {
-                _uart_putc(*s);
+                *uart0 = *s;
                 s++;
         }
 }
@@ -56,12 +68,128 @@ void _halt(const char *s)
         wfi();
 }
 
+void _init_kernel_pgtbl(void)
+{
+        for (int i = 0; i < ENTRY_SIZE; i++) {
+                l0_pgtbl[i] = 0x0ULL;
+                l1_pgtbl[i] = 0x0ULL;
+        }
+
+        /* Level 1 */
+        {
+                uint64_t blk = 0;
+
+                blk = ENTRY_VALID(blk);
+                blk = ENTRY_BLOCK(blk);
+
+                blk = BLK_SET_AIDX(blk, 0);
+                blk = BLK_SET_NS(blk, 0);
+                blk = BLK_SET_AP(blk, 0);
+                blk = BLK_SET_SH(blk, 0);
+                blk = BLK_SET_AF(blk, 0);
+                blk = BLK_SET_NG(blk, 0);
+
+                blk = BLK_SET_L1_NEXT(blk, 0x1);
+
+                blk = BLK_SET_HINT(blk, 0);
+                blk = BLK_SET_PXN(blk, 0);
+                blk = BLK_SET_XN(blk, 0);
+
+                l1_pgtbl[0] = blk;
+        }
+
+        /* Level 0 */
+        {
+                uint64_t tbl = 0;
+
+                tbl = ENTRY_VALID(tbl);
+                tbl = ENTRY_TABLE(tbl);
+
+                tbl = TBL_SET_NEXT(tbl, ((uint64_t) l1_pgtbl));
+
+                tbl = TBL_SET_PXN(tbl, 0);
+                tbl = TBL_SET_XN(tbl, 0);
+                tbl = TBL_SET_AP(tbl, 0);
+                tbl = TBL_SET_NS(tbl, 0);
+
+                l0_pgtbl[0] = tbl;
+        }
+
+        MSR("TTBR1_EL1", ((uint64_t) l0_pgtbl));
+        isb();
+}
+
+void _init_tcr(void)
+{
+        uint64_t tcr_el1 = 0;
+        uint64_t reg = 0;
+
+        /* DS: max. output addr (OA) and virtual addr (VA) size set to 48-bit */
+        tcr_el1 &= TCR_DS_48BITS;
+
+        /* IPS: effective output addr (OA) set to ID_AA64MMFR0_EL1.PARange */
+        MRS("ID_AA64MMFR0_EL1", reg);
+        tcr_el1 &= TCR_IPS_CLEAR;
+        tcr_el1 |= (GET_PARange(reg) << TCR_IPS_SHIFT);
+
+        /* T1SZ: input address (IA) size offset of mem region for TTBR1_EL1 */
+        /* T0SZ: input address (IA) size offset of mem region for TTBR0_EL1 */
+        tcr_el1 |= TCR_T1SZ << TCR_T1SZ_SHIFT;
+        tcr_el1 |= TCR_T0SZ << TCR_T0SZ_SHIFT;
+
+        /* HPDN1: enable hierarchical permissions for TTBR1_EL1 */
+        /* HPDN0: enable hierarchical permissions for TTBR0_EL1 */
+        tcr_el1 &= TCR_HPDN1_ENABLE;
+        tcr_el1 &= TCR_HPDN0_ENABLE;
+
+        /* A1: TTBR0 decides the ASID value (?) */
+        tcr_el1 &= TCR_A1_TTBR0;
+
+        /* EPD1: perform table walk on TTBR1 after TLB miss */
+        /* EPD0: perform table walk on TTBR0 after TLB miss */
+        tcr_el1 &= TCR_EPD1_DISABLE;
+        tcr_el1 &= TCR_EPD0_DISABLE;
+
+        /* TG1: granule size for TTBR1 region */
+        /* TG0: granule size for TTBR0 region */
+        tcr_el1 &= TCR_TG1_GRANULE_CLEAR;
+        tcr_el1 &= TCR_TG0_GRANULE_CLEAR;
+#if GRANULE_SIZE == 4096
+        tcr_el1 |= TCR_TG1_GRANULE_4KB;
+        tcr_el1 |= TCR_TG0_GRANULE_4KB;
+#elif GRANULE_SIZE == 16392
+        tcr_el1 |= TCR_TG1_GRANULE_16KB;
+#elif GRANULE_SIZE == 65568
+        tcr_el1 |= TCR_TG1_GRANULE_64KB;
+#else
+        return; // we fucked up
+#endif
+
+        /* Save TCR_EL1 */
+        MSR("TCR_EL1", tcr_el1);
+        isb();
+}
+
+void _init_sctlr(void)
+{
+        uint64_t sctlr_el1 = 0;
+
+        /* Read SCTLR_EL1 */
+        MRS("SCTLR_EL1", sctlr_el1);
+        isb();
+
+        sctlr_el1 |= SCTLR_M;
+
+        /* Save SCTLR_EL1 */
+        MSR("SCTLR_EL1", sctlr_el1);
+        isb();
+}
+
 void start(void)
 {
         volatile uint32_t arch = 0;
         volatile uint32_t val32 = 0;
         volatile uint64_t val64 = 0;
-
         char buff[64] = {0};
 
         /* Hard-coded device/board info */
@@ -69,7 +197,7 @@ void start(void)
         const char      *_cpuModel  = "Cortex A-72";
         const uint32_t  _coreCount =  2u;
 
-        _puts("WesterOS early boot stage\n");
+        _puts("Early boot stage\n");
         _puts("Running sanity checks\n");
 
         /* TODO: Any better way to early print? */
@@ -128,7 +256,7 @@ void start(void)
                 break;
         }
 
-        /* Check if interrupts are enabled */
+        /* Disable interrupts */
         debug_disable();
         irq_enable();
         fiq_disable();
@@ -168,7 +296,15 @@ void start(void)
                 _puts("Unmasked\n");
         }
 
+        MSR("VBAR_EL1", vector_tbl);
+        isb();
+
         /*TODO: Initialize page tables here */
+        _puts("Initializing kernel page tables\n");
+
+        _init_tcr();
+        _init_kernel_pgtbl();
+        _init_sctlr();
 
         _puts("+----------------------------------------------------+\n");
         _puts("|  __    _______  __, ____________ _ __    ___  __,  |\n");
@@ -179,5 +315,5 @@ void start(void)
         _puts("| Everything is OK. Calling the kernel now...        |\n");
         _puts("+----------------------------------------------------+\n");
 
-        kmain();
+        kmain(l0_pgtbl, l1_pgtbl, vector_tbl, (void*) DTB_START, DTB_SIZE);
 }

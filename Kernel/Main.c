@@ -20,10 +20,20 @@
 #include "Memory/Physical.h"
 #include "Memory/Virtual.h"
 
-extern uint64_t kend; /* in Kernel/kerne.ld */
-extern uint64_t vector_table; /* in Kernel/Arch/ARM64/Vector.S */
+extern uint64_t kend; /* in Kernel/kernel.ld */
 
-void kmain(void)
+/*
+ * Kernel entry.
+ *
+ * Parameters:
+ *      l0_pgtbl: ARM64 level 0 page table
+ *      l1_pgtbl: ARM64 level 1 page table
+ *      vector_tbl: ARM64 vector table base address
+ *      dtb: Device Tree Blob base address
+ *      dtb_size: Device Tree Blob size in bytes
+ */
+void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
+           void* dtb, uint32_t dtb_size)
 {
         const void *kernel_end = &kend;
 
@@ -52,8 +62,12 @@ void kmain(void)
         }
 
         /* X. Setup vector tables */
-        MSR("VBAR_EL1", vector_table);
-        isb();
+        if (vector_tbl) {
+                MSR("VBAR_EL1", vector_tbl);
+                isb();
+        } else {
+                klog("[kmain] NULL vector table is given!\n");
+        }
 
         /* 1. Init BootMem */
         klog("[kmain] Initializing early memory manager...\n");
@@ -77,8 +91,6 @@ void kmain(void)
         );
 
         /* 3. Init Kernel Page Tables & Enable MMU */
-        init_kernel_pgtbl();
-        init_tcr();
 
         /* X. Do something weird */
         klog("[kmain] imma just sleep\n");

@@ -58,8 +58,9 @@ SECTIONS
          * https://sourceware.org/binutils/docs/ld/Basic-Script-Concepts.html
          */
         
-        /* . = KERNEL_VMA_BASE; */
-        PROVIDE (kernel_vma_base = .);
+        PROVIDE (kstart = .); /* kernel is located at right after .start_sec */
+        . = KERNEL_VMA_BASE;
+        PROVIDE (kvma_base = .);
 
         .text : AT(ADDR(.start_sec) + SIZEOF(.start_sec))
         {
