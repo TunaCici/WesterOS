@@ -1,6 +1,8 @@
 /*
  * Device Tree Blob parser definitions
  *
+ * References: https://git.kernel.org/pub/scm/utils/dtc/dtc.git/
+ *
  * Author: Tuna CICI
  */
 
