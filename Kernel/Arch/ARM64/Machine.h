@@ -15,9 +15,14 @@ static inline void wfi(void)
     asm volatile("wfi" ::: "memory");
 }
 
-static inline void dsb(void)
+static inline void dsb_sy(void)
 {
     asm volatile("dsb sy" ::: "memory");
+}
+
+static inline void dsb_ish(void)
+{
+    asm volatile("dsb ish" ::: "memory");
 }
 
 static inline void dsb_ishst(void)
@@ -92,3 +97,18 @@ static inline void fiq_disable(void)
         asm volatile("msr " reg ",%x0" :: "r" (_v));\
     }while(0)
 
+/*
+ * MMU Cache Maintenance operations
+ *
+ * Ref: developer.arm.com/documentation/den0024/a/Caches/Cache-maintenance
+ */
+
+static inline void ic_ialluis()
+{
+    asm("IC IALLUIS" ::: "memory");
+}
+
+static inline void tlbi_vmalle1()
+{
+    asm("TLBI VMALLE1" ::: "memory");
+}
