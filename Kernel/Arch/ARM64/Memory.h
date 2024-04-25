@@ -6,6 +6,7 @@
  * https://github.com/ARM-software/u-boot/blob/master/arch/arm/include/asm/armv8/mmu.h
  * https://opensource.apple.com/source/xnu/xnu-6153.61.1/osfmk/arm64/proc_reg.h.auto.html
  * https://lowenware.com/blog/aarch64-mmu-programming/
+ * https://android.googlesource.com/kernel/msm/+/android-msm-wahoo-4.4-oreo-m2/arch/arm64/mm/proc.S
  *
  * Author: Tuna CICI
  */
@@ -150,13 +151,13 @@
 #define ARM_TB_NG_WIDTH         1ULL
 #define ARM_TB_NG_MASK          0x0000000000000800ULL
 
-#define ARM_TB_L1NEXT_SHIFT     30ULL
-#define ARM_TB_L1NEXT_WIDTH     18ULL
-#define ARM_TB_L1NEXT_MASK      0x0000FFFFC0000000ULL
+#define ARM_TB_L1OA_SHIFT       30ULL
+#define ARM_TB_L1OA_WIDTH       18ULL
+#define ARM_TB_L1OA_MASK        0x0000FFFFC0000000ULL
 
-#define ARM_TB_L2NEXT_SHIFT     21ULL
-#define ARM_TB_L2NEXT_WIDTH     27ULL
-#define ARM_TB_L2NEXT_MASK      0x0000FFFFFFE00000ULL
+#define ARM_TB_L2OA_SHIFT       21ULL
+#define ARM_TB_L2OA_WIDTH       27ULL
+#define ARM_TB_L2OA_MASK        0x0000FFFFFFE00000ULL
 
 #define ARM_TB_HINT_SHIFT       52ULL
 #define ARM_TB_HINT_WIDTH       1ULL
@@ -224,12 +225,12 @@
 #define BLK_SET_NG(blk, ng) \
         (((uint64_t)(blk) & ~ARM_TB_NG_MASK) | \
                 (((uint64_t)(ng) << ARM_TB_NG_SHIFT)))
-#define BLK_SET_L1_NEXT(blk, next) \
-        (((uint64_t)(blk) & ~ARM_TB_L1NEXT_MASK) | \
-                (((uint64_t)(next) << ARM_TB_L1NEXT_SHIFT)))
-#define BLK_SET_L2_NEXT(blk, next) \
-        (((uint64_t)(blk) & ~ARM_TB_L2NEXT_MASK) | \
-                (((uint64_t)(next) << ARM_TB_L2NEXT_SHIFT)))
+#define BLK_SET_L1_OA(blk, next) \
+        (((uint64_t)(blk) & ~ARM_TB_L1OA_MASK) | \
+                (((uint64_t)(next) << ARM_TB_L1OA_SHIFT)))
+#define BLK_SET_L2_OA(blk, next) \
+        (((uint64_t)(blk) & ~ARM_TB_L2OA_MASK) | \
+                (((uint64_t)(next) << ARM_TB_L2OA_SHIFT)))
 #define BLK_SET_HINT(blk, hint) \
         (((uint64_t)(blk) & ~ARM_TB_HINT_MASK) | \
                 (((uint64_t)(hint) << ARM_TB_HINT_SHIFT)))
@@ -279,9 +280,9 @@
 #define TCR_TG0_GRANULE_SHIFT   14ULL
 #define TCR_TG0_GRANULE_WIDTH   2ULL
 #define TCR_TG0_GRANULE_CLEAR   (~(((1ULL << TCR_TG0_GRANULE_WIDTH) - 1) << TCR_TG0_GRANULE_SHIFT)) 
-#define TCR_TG0_GRANULE_4KB     (0ULL << TCR_TG0_GRANULE_SHIFT)
-#define TCR_TG0_GRANULE_64KB    (1ULL << TCR_TG0_GRANULE_SHIFT)
-#define TCR_TG0_GRANULE_16KB    (2ULL << TCR_TG0_GRANULE_SHIFT)           
+#define TCR_TG0_GRANULE_4KB     (0b00ULL << TCR_TG0_GRANULE_SHIFT)
+#define TCR_TG0_GRANULE_64KB    (0b01ULL << TCR_TG0_GRANULE_SHIFT)
+#define TCR_TG0_GRANULE_16KB    (0b10ULL << TCR_TG0_GRANULE_SHIFT)           
 
 #define TCR_T1SZ_SHIFT          16ULL
 #define TCR_T1SZ                16ULL // 2^(64 - T1SZ) IA bits for TTBR1
@@ -296,9 +297,9 @@
 #define TCR_TG1_GRANULE_SHIFT   30ULL
 #define TCR_TG1_GRANULE_WIDTH   2ULL
 #define TCR_TG1_GRANULE_CLEAR   (~(((1ULL << TCR_TG1_GRANULE_WIDTH) - 1) << TCR_TG1_GRANULE_SHIFT)) 
-#define TCR_TG1_GRANULE_16KB    (1ULL << TCR_TG1_GRANULE_SHIFT)
-#define TCR_TG1_GRANULE_4KB     (2ULL << TCR_TG1_GRANULE_SHIFT)
-#define TCR_TG1_GRANULE_64KB    (3ULL << TCR_TG1_GRANULE_SHIFT)
+#define TCR_TG1_GRANULE_16KB    (0b00 << TCR_TG1_GRANULE_SHIFT)
+#define TCR_TG1_GRANULE_4KB     (0b10 << TCR_TG1_GRANULE_SHIFT)
+#define TCR_TG1_GRANULE_64KB    (0b11 << TCR_TG1_GRANULE_SHIFT)
 
 #define TCR_IPS_SHIFT           32ULL
 #define TCR_IPS_WIDTH           3ULL
@@ -313,5 +314,33 @@
 #define TCR_DS_SHIFT            59ULL
 #define TCR_DS_48BITS           ~(1ULL << TCR_DS_SHIFT)
 #define TCR_DS_52BITS           (1ULL << TCR_DS_SHIFT)
+
+/*
+ * Memory Attribute Indirection Register (MAIR)
+ *
+ * Current:
+ *
+ *  63   56 55   48 47   40 39   32 31   24 23   16 15    8 7     0
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ * | Attr7 | Attr6 | Attr5 | Attr4 | Attr3 | Attr2 | Attr1 | Attr0 |
+ * +-------+-------+-------+-------+-------+-------+-------+-------+
+ *
+ * Attr<n>, bits [8n+7:8n], for n = 7 to 0
+ *      Memory Attribute encoding.
+ */
+
+/* Pre-defined MAIR attributes */
+#define DEVICE_nGnRnE_MAIR      0b00000000ULL
+#define DEVICE_nGnRnE_IDX       0ULL
+#define DEVICE_nGnRE_MAIR       0b00000100ULL
+#define DEVICE_nGnRE_IDX        1ULL
+#define DEVICE_GRE_MAIR         0b00001100ULL
+#define DEVICE_GRE_IDX          2ULL
+#define NORMAL_NC_MAIR          0b01000100ULL
+#define NORMAL_NC_IDX           3ULL
+#define NORMAL_MAIR             0b11111111ULL
+#define NORMAL_IDX              4ULL
+#define NORMAL_WT_MAIR          0b10111011ULL
+#define NORMAL_WT_IDX           5ULL
 
 #endif /* ARM64_MEMORY_H */

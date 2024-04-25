@@ -24,11 +24,15 @@ extern uint64_t kvma_base;
 
 /* in Kernel/Arch/ARM64/Vector.S */
 extern uint64_t vector_table; 
-
-/* Kernel parameters */
-uint64_t l0_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
-uint64_t l1_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
 uint64_t vector_tbl = (uint64_t) (&vector_table);
+
+/* Higher half - TTBR1_EL1 */
+uint64_t k_l0_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
+uint64_t k_l1_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
+
+/* Lower half - TTBR0_EL1 */
+uint64_t u_l0_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
+uint64_t u_l1_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
 
 void _utoa(uint64_t uval, char *buff, uint8_t base)
 {
@@ -60,19 +64,28 @@ void _puts(const char *s)
         }
 }
 
-void _halt(const char *s)
+/* TODO: Do this properly */
+void _init_mair(void)
 {
-        _puts("Halting due to: ");
-        _puts(s);
+        uint64_t mair_el1 = 0;
 
-        wfi();
+        /* Refer to Kernel/Arch/ARM64/Memory.h */
+        mair_el1 |= (DEVICE_nGnRnE_MAIR << DEVICE_nGnRnE_IDX * 8);
+        mair_el1 |= (DEVICE_nGnRE_MAIR << DEVICE_nGnRE_IDX * 8);
+        mair_el1 |= (DEVICE_GRE_MAIR << DEVICE_GRE_IDX * 8);
+        mair_el1 |= (NORMAL_NC_MAIR << NORMAL_NC_IDX * 8);
+        mair_el1 |= (NORMAL_MAIR << NORMAL_IDX * 8);
+        mair_el1 |= (NORMAL_WT_MAIR << NORMAL_WT_IDX * 8);
+
+        asm("MSR MAIR_EL1, %[v]": :[v]"r" (mair_el1):);
+        asm("ISB": : :);
 }
 
 void _init_kernel_pgtbl(void)
 {
         for (int i = 0; i < ENTRY_SIZE; i++) {
-                l0_pgtbl[i] = 0x0ULL;
-                l1_pgtbl[i] = 0x0ULL;
+                k_l0_pgtbl[i] = 0x0ULL;
+                k_l1_pgtbl[i] = 0x0ULL;
         }
 
         /* Level 1 */
@@ -82,20 +95,20 @@ void _init_kernel_pgtbl(void)
                 blk = ENTRY_VALID(blk);
                 blk = ENTRY_BLOCK(blk);
 
-                blk = BLK_SET_AIDX(blk, 0);
+                blk = BLK_SET_AIDX(blk, NORMAL_IDX);
                 blk = BLK_SET_NS(blk, 0);
                 blk = BLK_SET_AP(blk, 0);
                 blk = BLK_SET_SH(blk, 0);
                 blk = BLK_SET_AF(blk, 0);
                 blk = BLK_SET_NG(blk, 0);
 
-                blk = BLK_SET_L1_NEXT(blk, 0x1);
+                blk = BLK_SET_L1_OA(blk, 0x0);
 
                 blk = BLK_SET_HINT(blk, 0);
                 blk = BLK_SET_PXN(blk, 0);
                 blk = BLK_SET_XN(blk, 0);
 
-                l1_pgtbl[0] = blk;
+                k_l1_pgtbl[0] = blk;
         }
 
         /* Level 0 */
@@ -105,17 +118,69 @@ void _init_kernel_pgtbl(void)
                 tbl = ENTRY_VALID(tbl);
                 tbl = ENTRY_TABLE(tbl);
 
-                tbl = TBL_SET_NEXT(tbl, ((uint64_t) l1_pgtbl));
+                tbl = TBL_SET_NEXT(tbl, ((uint64_t) k_l1_pgtbl));
 
                 tbl = TBL_SET_PXN(tbl, 0);
                 tbl = TBL_SET_XN(tbl, 0);
                 tbl = TBL_SET_AP(tbl, 0);
                 tbl = TBL_SET_NS(tbl, 0);
 
-                l0_pgtbl[0] = tbl;
+                k_l0_pgtbl[0] = tbl;
         }
 
-        MSR("TTBR1_EL1", ((uint64_t) l0_pgtbl));
+        MSR("TTBR1_EL1", ((uint64_t) k_l0_pgtbl));
+        isb();
+}
+
+
+void _init_user_pgtbl(void)
+{
+        for (int i = 0; i < ENTRY_SIZE; i++) {
+                u_l0_pgtbl[i] = 0x0ULL;
+                u_l1_pgtbl[i] = 0x0ULL;
+        }
+
+        /* Level 1 */
+        {
+                uint64_t blk = 0;
+
+                blk = ENTRY_VALID(blk);
+                blk = ENTRY_BLOCK(blk);
+
+                blk = BLK_SET_AIDX(blk, NORMAL_IDX);
+                blk = BLK_SET_NS(blk, 0);
+                blk = BLK_SET_AP(blk, 0);
+                blk = BLK_SET_SH(blk, 0b11);
+                blk = BLK_SET_AF(blk, 1);
+                blk = BLK_SET_NG(blk, 0);
+
+                blk = BLK_SET_L1_OA(blk, 0x1);
+
+                blk = BLK_SET_HINT(blk, 0);
+                blk = BLK_SET_PXN(blk, 0);
+                blk = BLK_SET_XN(blk, 0);
+
+                u_l1_pgtbl[1] = blk;
+        }
+
+        /* Level 0 */
+        {
+                uint64_t tbl = 0;
+
+                tbl = ENTRY_VALID(tbl);
+                tbl = ENTRY_TABLE(tbl);
+
+                tbl = TBL_SET_NEXT(tbl, ((uint64_t) u_l1_pgtbl));
+
+                tbl = TBL_SET_PXN(tbl, 0);
+                tbl = TBL_SET_XN(tbl, 0);
+                tbl = TBL_SET_AP(tbl, 0);
+                tbl = TBL_SET_NS(tbl, 0);
+
+                u_l0_pgtbl[0] = tbl;
+        }
+
+        MSR("TTBR0_EL1", ((uint64_t) u_l0_pgtbl));
         isb();
 }
 
@@ -154,13 +219,16 @@ void _init_tcr(void)
         /* TG0: granule size for TTBR0 region */
         tcr_el1 &= TCR_TG1_GRANULE_CLEAR;
         tcr_el1 &= TCR_TG0_GRANULE_CLEAR;
+
 #if GRANULE_SIZE == 4096
         tcr_el1 |= TCR_TG1_GRANULE_4KB;
         tcr_el1 |= TCR_TG0_GRANULE_4KB;
 #elif GRANULE_SIZE == 16392
         tcr_el1 |= TCR_TG1_GRANULE_16KB;
+        tcr_el1 |= TCR_TG0_GRANULE_16KB;
 #elif GRANULE_SIZE == 65568
         tcr_el1 |= TCR_TG1_GRANULE_64KB;
+        tcr_el1 |= TCR_TG0_GRANULE_64KB;
 #else
         return; // we fucked up
 #endif
@@ -178,11 +246,12 @@ void _init_sctlr(void)
         MRS("SCTLR_EL1", sctlr_el1);
         isb();
 
+        /* Enable MMU */
         sctlr_el1 |= SCTLR_M;
 
         /* Save SCTLR_EL1 */
         MSR("SCTLR_EL1", sctlr_el1);
-        isb();
+        asm("ISB": : :);
 }
 
 void start(void)
@@ -214,7 +283,8 @@ void start(void)
         if (arch == 0x41) {
                 _puts("---- Implementer: ARM\n");
         } else {
-                _halt("---- Unknown Implementer\n");
+                _puts("---- Unknown Implementer\n");
+                return;
         }
 
         _puts("---- Model: ");
@@ -252,7 +322,8 @@ void start(void)
                         _puts("EL3 (Secure Monitor mode)\n");
                 break;
                 default:
-                        _halt("Unknown exception level\n");
+                        _puts("Unknown exception level\n");
+                        return;
                 break;
         }
 
@@ -299,11 +370,24 @@ void start(void)
         MSR("VBAR_EL1", vector_tbl);
         isb();
 
-        /*TODO: Initialize page tables here */
-        _puts("Initializing kernel page tables\n");
-
+        _puts("Initializing Translation Control Register (TCR)\n");
         _init_tcr();
+
+        _puts("Initializing Memory Attribute Indirection Register (MAIR_EL1)\n");
+        _init_mair();
+
+        _puts("Initializing kernel page tables (TTBR1_EL1)\n");
         _init_kernel_pgtbl();
+
+        _puts("Initializing user page tables (TTBR0_EL1)\n");
+        _init_user_pgtbl();
+
+        _puts("Flushing instruction & TLB caches\n");
+        ic_ialluis();
+        tlbi_vmalle1();
+        dsb_ish();
+
+        _puts("Initializing System Control Register (SCTLR_EL1)\n");
         _init_sctlr();
 
         _puts("+----------------------------------------------------+\n");
@@ -315,5 +399,5 @@ void start(void)
         _puts("| Everything is OK. Calling the kernel now...        |\n");
         _puts("+----------------------------------------------------+\n");
 
-        kmain(l0_pgtbl, l1_pgtbl, vector_tbl, (void*) DTB_START, DTB_SIZE);
+        kmain(k_l0_pgtbl, k_l1_pgtbl, vector_tbl, (void*) DTB_START, DTB_SIZE);
 }
