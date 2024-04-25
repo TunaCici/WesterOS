@@ -131,18 +131,58 @@ State of ARM64 machine (e.g., registers) right before `kmain()`
 * Kernel Page Tables
   * Level 0 @ `0x40101000`
     * Array of 512 uint64_t's
-    * 0th : `0x`
-    * 1...511th: `0x0`
+    * Index 0 : `0x40102000003`
   * Level 1 @ `0x40102000`
     * Array of 512 uint64_t's
-    * 0th: `0x`
-    * 1...511th: `0x0`
-* MAIR_EL1: `0x0`
+    * Index : `0x40000001`
+* User Page Tables
+  * Level 0 @ `0x40103000`
+    * Array of 512 uint64_t's
+    * Index 0 : `0x40104000003`
+  * Level 1 @ `0x40104000`
+    * Array of 512 uint64_t's
+    * Index 1: `0x40000701`
+* MAIR_EL1: `0xff`
+  * Attbr 0:
+  * Attbr 1:
+  * Attbr 2:
+  * Attbr 3:
+  * Attbr 4:
+  * Attbr 5:
+  * Attbr 6:
+  * Attbr 7:
 * TCR_EL1: `0x480100010`
-* TTBR0_EL1: `0x0`
-* TTBR1_EL1: `0x40101000`
+  * DS: `0b0 (48 bit)`
+  * IPS: `0b100 (44 bits, 16TB)`
+  * T1SZ: `0b01000 (16)`
+  * T0SZ: `0b01000 (16)`
+  * HPDN1: `0b0 (Hierarchical permissions enabled)`
+  * HPDN0: `0b0 (Hierarchical permissions enabled)`
+  * TBI1: `0b0 (Top Byte used)`
+  * TBI0: `0b0 (Top Byte used)`
+  * AS: `0b0 (8 bit)`
+  * A1: `0b0 (TTBR0_EL1.ASID defines the ASID)`
+  * EPD1: `0b0 (Perform table walk)`
+  * EPD0: `0b0 (Perform table walk)`
+  * TG1: `0b10 (4 KiB)`
+  * TG0: `0b00 (4 KiB)`
+  * SH1: `0b00 (Non-shareable)`
+  * SH0: `0b00 (Non-shareable)`
+  * ORGN1: `0b00 (Outer Non-cacheable)`
+  * ORGN0: `0b00 (Outer Non-cacheable)`
+  * IRGN1: `0b00 (Inner Non-cacheable)`
+  * IRGN0: `0b00 (Inner Non-cacheable)`
+* TTBR1_EL1: `0x40101000 (k_l0_pgtbl)`
+* TTBR0_EL1: `0x40103000 (u_l0_pgtbl)` 
 * SCTLR_EL1: `0xc50839`
-
+  * M: `0b1 (MMU enabled)`
+  * A: `0b0 (Alignment fault checking is disabled)`
+  * C: `0b0`
+  * SA: `0b1 (SP Alignment check enabled)`
+  * SA0: `0b1 (SP Alignment check enabled for EL0)`
+  * CP15BEN: `0b1 (System instruction memory barrier enabled for EL0 Aarch32)`
+  * I: `0b0 (Access to Stage 1 Normal memory from EL0 & EL1 are Stage 1 Non-cacheable)`
+  * 
 
 ### Kernel
 
