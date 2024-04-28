@@ -171,6 +171,18 @@
 #define ARM_TB_XN_WIDTH         1ULL
 #define ARM_TB_XN_MASK          0x0040000000000000ULL
 
+/* Access Protection (AP) permissions */
+#define AP_PRIV_RW 0b00
+#define AP_PRIV_RW_UNPRIV_RW 0b01
+#define AP_PRIV_R 0b10
+#define AP_PRIV_R_UNPRIV_R 0b11
+
+/* Sharibility (SH) attributes */
+#define SH_NON 0b00
+#define SH_RES 0b01
+#define SH_OUTER 0b10
+#define SH_INNER 0b11
+
 /* Sugars for getting pointers to page tables and entries */
 #define L0_TABLE_INDEX(va) (((va) & ARM_TT_L0_INDEX_MASK) >> ARM_TT_L0_SHIFT)
 #define L1_TABLE_INDEX(va) (((va) & ARM_TT_L1_INDEX_MASK) >> ARM_TT_L1_SHIFT)
