@@ -151,13 +151,13 @@
 #define ARM_TB_NG_WIDTH         1ULL
 #define ARM_TB_NG_MASK          0x0000000000000800ULL
 
-#define ARM_TB_L1OA_SHIFT       30ULL
-#define ARM_TB_L1OA_WIDTH       18ULL
-#define ARM_TB_L1OA_MASK        0x0000FFFFC0000000ULL
+#define ARM_TB_L1_OA_SHIFT       30ULL
+#define ARM_TB_L1_OA_WIDTH       18ULL
+#define ARM_TB_L1_OA_MASK        0x0000FFFFC0000000ULL
 
-#define ARM_TB_L2OA_SHIFT       21ULL
-#define ARM_TB_L2OA_WIDTH       27ULL
-#define ARM_TB_L2OA_MASK        0x0000FFFFFFE00000ULL
+#define ARM_TB_L2_OA_SHIFT       21ULL
+#define ARM_TB_L2_OA_WIDTH       27ULL
+#define ARM_TB_L2_OA_MASK        0x0000FFFFFFE00000ULL
 
 #define ARM_TB_HINT_SHIFT       52ULL
 #define ARM_TB_HINT_WIDTH       1ULL
@@ -204,7 +204,7 @@
 /* Table */
 #define TBL_SET_NEXT(tbl, next) \
         (((uint64_t)(tbl) & ~ARM_TT_NEXT_MASK) | \
-                (((uint64_t)(next) << ARM_TT_NEXT_SHIFT)))
+                ((uint64_t)(next)))
 #define TBL_SET_PXN(tbl, pxn) \
         (((uint64_t)(tbl) & ~ARM_TT_PXN_MASK) | \
                 (((uint64_t)(pxn) << ARM_TT_PXN_SHIFT)))
@@ -238,11 +238,11 @@
         (((uint64_t)(blk) & ~ARM_TB_NG_MASK) | \
                 (((uint64_t)(ng) << ARM_TB_NG_SHIFT)))
 #define BLK_SET_L1_OA(blk, next) \
-        (((uint64_t)(blk) & ~ARM_TB_L1OA_MASK) | \
-                (((uint64_t)(next) << ARM_TB_L1OA_SHIFT)))
+        (((uint64_t)(blk) & ~ARM_TB_L1_OA_MASK) | \
+                ((uint64_t)(next)))
 #define BLK_SET_L2_OA(blk, next) \
-        (((uint64_t)(blk) & ~ARM_TB_L2OA_MASK) | \
-                (((uint64_t)(next) << ARM_TB_L2OA_SHIFT)))
+        (((uint64_t)(blk) & ~ARM_TB_L2_OA_MASK) | \
+                ((uint64_t)(next)))
 #define BLK_SET_HINT(blk, hint) \
         (((uint64_t)(blk) & ~ARM_TB_HINT_MASK) | \
                 (((uint64_t)(hint) << ARM_TB_HINT_SHIFT)))
