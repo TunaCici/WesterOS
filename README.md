@@ -127,30 +127,30 @@ TODO: How does everything starts? Why the things I do are the way they are?
 
 State of ARM64 machine (e.g., registers) right before `kmain()`
 
-* VBAR: `0xffff000000000000`
+* VBAR: `0xffff000040108000`
 * Kernel Page Tables
   * Level 0 @ `0x40101000`
     * Array of 512 uint64_t's
-    * Index 0 : `0x40102000003`
+    * Index 0 : `0x40102003`
   * Level 1 @ `0x40102000`
     * Array of 512 uint64_t's
-    * Index : `0x40000001`
+    * Index 1: `0x40000701`
 * User Page Tables
   * Level 0 @ `0x40103000`
     * Array of 512 uint64_t's
-    * Index 0 : `0x40104000003`
+    * Index 0 : `0x40104003`
   * Level 1 @ `0x40104000`
     * Array of 512 uint64_t's
     * Index 1: `0x40000701`
-* MAIR_EL1: `0xff`
-  * Attbr 0:
-  * Attbr 1:
-  * Attbr 2:
-  * Attbr 3:
-  * Attbr 4:
-  * Attbr 5:
-  * Attbr 6:
-  * Attbr 7:
+* MAIR_EL1: `0xbbff440c0400`
+  * Attbr 0: `0b00000000 (DEVICE_nGnRnE)`
+  * Attbr 1: `0b00000100 (DEVICE_nGnRE)`
+  * Attbr 2: `0b00001100 (DEVICE_GRE)`
+  * Attbr 3: `0b01000100 (NORMAL_NC)`
+  * Attbr 4: `0b11111111 (NORMAL)`
+  * Attbr 5: `0b10111011 (NORMAL_WT)`
+  * Attbr 6: `0b00000000 (Res)`
+  * Attbr 7: `0b00000000 (Res)`
 * TCR_EL1: `0x480100010`
   * DS: `0b0 (48 bit)`
   * IPS: `0b100 (44 bits, 16TB)`
