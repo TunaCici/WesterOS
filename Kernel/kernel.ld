@@ -58,8 +58,9 @@ SECTIONS
          * https://sourceware.org/binutils/docs/ld/Basic-Script-Concepts.html
          */
         
-        PROVIDE (kstart = .); /* kernel is located at right after .start_sec */
-        . = KERNEL_VMA_BASE;
+        /* kernel is located at right after .start_sec */
+        PROVIDE (kstart = .);
+        . = KERNEL_VMA_BASE + (ADDR(.start_sec) + SIZEOF(.start_sec));
         PROVIDE (kvma_base = .);
 
         .text : AT(ADDR(.start_sec) + SIZEOF(.start_sec))
@@ -69,7 +70,7 @@ SECTIONS
                 *(.rodata*)
                 . = ALIGN(0x1000);
         }
-
+        
         .data : AT(ADDR(.text) + SIZEOF(.text))
         {
                 _data = .;
@@ -90,6 +91,6 @@ SECTIONS
                 *(.bss .bss.* COMMON)
                 . = ALIGN(0x1000);
         }
-
+        
         PROVIDE (kend = .);
 }
