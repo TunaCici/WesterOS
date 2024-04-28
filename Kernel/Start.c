@@ -21,6 +21,7 @@ extern void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
 extern uint64_t kstart;
 extern uint64_t kend;
 extern uint64_t kvma_base;
+uint64_t kernel_start = (uint64_t) (&kstart);
 
 /* in Kernel/Arch/ARM64/Vector.S */
 extern uint64_t vector_table; 
@@ -97,18 +98,18 @@ void _init_kernel_pgtbl(void)
 
                 blk = BLK_SET_AIDX(blk, NORMAL_IDX);
                 blk = BLK_SET_NS(blk, 0);
-                blk = BLK_SET_AP(blk, 0);
-                blk = BLK_SET_SH(blk, 0);
-                blk = BLK_SET_AF(blk, 0);
+                blk = BLK_SET_AP(blk, AP_PRIV_RW);
+                blk = BLK_SET_SH(blk, SH_OUTER);
+                blk = BLK_SET_AF(blk, 1);
                 blk = BLK_SET_NG(blk, 0);
 
-                blk = BLK_SET_L1_OA(blk, 0x0);
+                blk = BLK_SET_L1_OA(blk, kernel_start);
 
                 blk = BLK_SET_HINT(blk, 0);
                 blk = BLK_SET_PXN(blk, 0);
                 blk = BLK_SET_XN(blk, 0);
 
-                k_l1_pgtbl[0] = blk;
+                k_l1_pgtbl[1] = blk;
         }
 
         /* Level 0 */
@@ -149,18 +150,41 @@ void _init_user_pgtbl(void)
 
                 blk = BLK_SET_AIDX(blk, NORMAL_IDX);
                 blk = BLK_SET_NS(blk, 0);
-                blk = BLK_SET_AP(blk, 0);
-                blk = BLK_SET_SH(blk, 0b11);
+                blk = BLK_SET_AP(blk, AP_PRIV_RW);
+                blk = BLK_SET_SH(blk, SH_OUTER);
                 blk = BLK_SET_AF(blk, 1);
                 blk = BLK_SET_NG(blk, 0);
 
-                blk = BLK_SET_L1_OA(blk, 0x1);
+                blk = BLK_SET_L1_OA(blk, 0x40000000);
 
                 blk = BLK_SET_HINT(blk, 0);
                 blk = BLK_SET_PXN(blk, 0);
                 blk = BLK_SET_XN(blk, 0);
 
                 u_l1_pgtbl[1] = blk;
+        }
+
+        /* Level 1 - Dev */
+        {
+                uint64_t blk = 0;
+
+                blk = ENTRY_VALID(blk);
+                blk = ENTRY_BLOCK(blk);
+
+                blk = BLK_SET_AIDX(blk, DEVICE_nGnRE_IDX);
+                blk = BLK_SET_NS(blk, 0);
+                blk = BLK_SET_AP(blk, AP_PRIV_RW);
+                blk = BLK_SET_SH(blk, SH_OUTER);
+                blk = BLK_SET_AF(blk, 1);
+                blk = BLK_SET_NG(blk, 0);
+
+                blk = BLK_SET_L1_OA(blk, 0x000000000);
+
+                blk = BLK_SET_HINT(blk, 0);
+                blk = BLK_SET_PXN(blk, 0);
+                blk = BLK_SET_XN(blk, 0);
+
+                u_l1_pgtbl[0] = blk;
         }
 
         /* Level 0 */
@@ -399,5 +423,5 @@ void start(void)
         _puts("| Everything is OK. Calling the kernel now...        |\n");
         _puts("+----------------------------------------------------+\n");
 
-        kmain(k_l0_pgtbl, k_l1_pgtbl, vector_tbl, (void*) DTB_START, DTB_SIZE);
+        kmain(0 , 0, 0, 0, 0);
 }
