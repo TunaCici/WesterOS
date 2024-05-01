@@ -6,7 +6,7 @@
 
 .text
 .balign 2048
-.global vector_table
+.global _vector_table
 
 .macro store_regs
         stp     x0,  x1,  [sp, #16 * 0]
@@ -63,7 +63,7 @@
         ldp     x0,  x1,  [sp, #16 * 0]
 .endm
 
-vector_table:
+_vector_table:
 
 /*
  * 1. Current EL where SP -> SP_EL0 - TODO

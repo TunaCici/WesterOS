@@ -7,7 +7,8 @@
 #include <stdint.h>
 
 #include "ARM64/Machine.h"
-#include "Memory/Virtual.h"
+
+#include "Boot.h"
 #include "MemoryLayout.h"
 
 #include "LibKern/String.h"
@@ -20,8 +21,6 @@
 #include "Memory/Physical.h"
 #include "Memory/Virtual.h"
 
-extern uint64_t kend; /* in Kernel/kernel.ld */
-
 /*
  * Kernel entry.
  *
@@ -32,12 +31,11 @@ extern uint64_t kend; /* in Kernel/kernel.ld */
  *      dtb: Device Tree Blob base address
  *      dtb_size: Device Tree Blob size in bytes
  */
-void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
-           void* dtb, uint32_t dtb_size)
+void kmain(boot_sysinfo boot_params)
 {
-        const void *kernel_end = &kend;
-
+        volatile void *important_ahh = &boot_params;
         uint64_t mem_start = 0x0;
+        volatile void *important_ahh2 = &mem_start;
         uint64_t mem_end = 0x0;
 
         /* 0. Get HW Information */
@@ -62,8 +60,8 @@ void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
         }
 
         /* X. Setup vector tables */
-        if (vector_tbl) {
-                MSR("VBAR_EL1", vector_tbl);
+        if (boot_params.vector_base) {
+                MSR("VBAR_EL1", boot_params.vector_base);
                 isb();
         } else {
                 klog("[kmain] NULL vector table is given!\n");
@@ -72,7 +70,7 @@ void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
         /* 1. Init BootMem */
         klog("[kmain] Initializing early memory manager...\n");
 
-        uint64_t pageCount = bootmem_init(kernel_end);
+        uint64_t pageCount = bootmem_init((const void*) (boot_params.k_phy_base + boot_params.k_size));
 
         klog("[kmain] Pages available: %lu (%lu KiB) in bootmem\n",
                 pageCount, (pageCount * PAGE_SIZE) / 1024
@@ -82,7 +80,7 @@ void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
         klog("[kmain] Initializing physical memory manager...\n");
 
         uint64_t blockCount = init_allocator(
-                (const void *) kernel_end + pageCount * PAGE_SIZE,
+                (const void *) boot_params.k_phy_base + boot_params.k_size + pageCount * PAGE_SIZE,
                 (const void *) mem_end
         );
 

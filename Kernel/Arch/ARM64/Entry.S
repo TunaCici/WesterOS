@@ -1,6 +1,6 @@
 /*
- * Entry point for the WesterOS kernel for ARMv8
- * Initialize the Stack pointer, clear the BSS and jump to Start.c
+ * Entry point for the WesterOS kernel for ARM64
+ * Initializes stack pointer, clears the BSS and jump to Start.c
  *
  * Originally from: sudharson14/xv6-OS-for-arm-v8
  * Modified by: Tuna CICI	
@@ -16,13 +16,13 @@ _start:
 	msr     spsel, x0
 	isb
 
-	/* Init stack (`init_stktop` bytes) */
-	adrp    x0, init_stktop
+	/* Init stack (`_shim_stack_top` bytes) */
+	adrp    x0, _shim_stack_top
 	mov     sp, x0
 
-	/* Clear the entry bss section, the svc stack, and kernel page table */
-	ldr     x1, =edata_entry
-	ldr     x2, =end_entry
+	/* Clear the shim bss section & the svc stack */
+	ldr     x1, =_shim_bss_start
+	ldr     x2, =_shim_end
 	mov     x3, #0x00
 
 	/* Enable access to FPU & Advanced SIMD (NEON) */

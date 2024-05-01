@@ -1,31 +1,36 @@
 /*
- * Early boot stage. Sanity checks for hardware devices & "calls" kmain(...)
+ * Entry point for the WesterOS kernel for ARM64 cntd.
+ * Initialize CPU cores, setup the iniital page tables & enable MMU
+ * Finally, pass information & control to the kernel
  *
  * Author: Tuna CICI
  */
 
 #include <stdint.h>
-#include <stdarg.h>
 
 #include "ARM64/Machine.h"
 #include "ARM64/RegisterSet.h"
 #include "ARM64/Memory.h"
 
+#include "Boot.h"
 #include "MemoryLayout.h"
 
 /* in Main.c */
-extern void kmain(uint64_t l0_pgtbl[], uint64_t l1_pgtbl[], uint64_t vector_tbl,
-                  void* dtb, uint32_t dtb_size);
+extern void kmain(boot_sysinfo, uint64_t);
 
 /* in Kernel/kernel.ld */
-extern uint64_t kstart;
-extern uint64_t kend;
-extern uint64_t kvma_base;
-uint64_t kernel_start = (uint64_t) (&kstart);
+extern uint64_t _k_phy_base;
+extern uint64_t _k_vir_base;
+extern uint64_t _k_size;
+extern uint64_t _k_stack_top;
+uint64_t k_phy_base = (uint64_t) (&_k_phy_base);
+uint64_t k_vir_base = (uint64_t) (&_k_vir_base);
+uint64_t k_size = (uint64_t) (&_k_size);
+uint64_t k_stack_top = (uint64_t) (&_k_stack_top);
 
 /* in Kernel/Arch/ARM64/Vector.S */
-extern uint64_t vector_table; 
-uint64_t vector_tbl = (uint64_t) (&vector_table);
+extern uint64_t _vector_table; 
+uint64_t vector_table = (uint64_t) (&_vector_table);
 
 /* Higher half - TTBR1_EL1 */
 uint64_t k_l0_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
@@ -103,7 +108,7 @@ void _init_kernel_pgtbl(void)
                 blk = BLK_SET_AF(blk, 1);
                 blk = BLK_SET_NG(blk, 0);
 
-                blk = BLK_SET_L1_OA(blk, kernel_start);
+                blk = BLK_SET_L1_OA(blk, k_phy_base);
 
                 blk = BLK_SET_HINT(blk, 0);
                 blk = BLK_SET_PXN(blk, 0);
@@ -174,7 +179,7 @@ void _init_user_pgtbl(void)
                 blk = BLK_SET_AIDX(blk, DEVICE_nGnRE_IDX);
                 blk = BLK_SET_NS(blk, 0);
                 blk = BLK_SET_AP(blk, AP_PRIV_RW);
-                blk = BLK_SET_SH(blk, SH_OUTER);
+                blk = BLK_SET_SH(blk, SH_NON);
                 blk = BLK_SET_AF(blk, 1);
                 blk = BLK_SET_NG(blk, 0);
 
@@ -280,10 +285,12 @@ void _init_sctlr(void)
 
 void start(void)
 {
-        volatile uint32_t arch = 0;
-        volatile uint32_t val32 = 0;
-        volatile uint64_t val64 = 0;
+        uint32_t arch = 0;
+        uint32_t val32 = 0;
+        uint64_t val64 = 0;
         char buff[64] = {0};
+
+        boot_sysinfo boot_params = {0};
 
         /* Hard-coded device/board info */
         /* TODO: Replace this with a DTB parser */
@@ -351,6 +358,16 @@ void start(void)
                 break;
         }
 
+        /* Populate boot_sysinfo - will be passed to the kernel */
+        boot_params.k_phy_base = k_phy_base;
+        boot_params.k_vir_base = k_vir_base;
+        boot_params.k_size = k_size;
+
+        boot_params.vector_base = vector_table;
+
+        boot_params.dtb_base = DTB_START;
+        boot_params.dtb_size = DTB_SIZE;
+
         /* Disable interrupts */
         debug_disable();
         irq_enable();
@@ -391,7 +408,7 @@ void start(void)
                 _puts("Unmasked\n");
         }
 
-        MSR("VBAR_EL1", vector_tbl);
+        MSR("VBAR_EL1", vector_table);
         isb();
 
         _puts("Initializing Translation Control Register (TCR)\n");
@@ -423,5 +440,8 @@ void start(void)
         _puts("| Everything is OK. Calling the kernel now...        |\n");
         _puts("+----------------------------------------------------+\n");
 
-        kmain(0 , 0, 0, 0, 0);
+        /* Jump the stack pointer the stack pointer */
+        asm volatile ("mov sp, %0" :: "r" (k_stack_top));
+        
+        kmain(boot_params, 0);
 }

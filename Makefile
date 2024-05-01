@@ -66,14 +66,14 @@ GTEST_CXXFLAGS = ${INCLUDES} -g -Wall -Wextra -std=c++20 \
 # Without it I'd get errors like: undefined symbol "_kernel_pgtbl".
 # The files like Kernel/Main.c uses symbols defined in Kernel/Kernel.ld
 # When compiling tests ALL objects are are given to the clang/ld.
-# Since Start.C and Main.c will [probably] never gonna get unit tested
+# Since Start.c and Main.c will [probably] never gonna get unit tested
 # We can just ignore "unreslved symbols" with -dead-strip.
 # > maybe in the future I can find a better way. who knows...
 
 # Project source files
 SRCS = \
+	Kernel/Arch/ARM64/Start.c \
 	Kernel/Arch/ARM64/Exception.c \
-	Kernel/Start.c \
 	Kernel/Main.c \
 	Kernel/Library/LibKern/DeviceTree.c \
 	Kernel/Library/LibKern/Console.c \
