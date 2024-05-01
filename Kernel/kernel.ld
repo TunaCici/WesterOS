@@ -1,5 +1,5 @@
 /*
- * WesterOS kernel linker script
+ * WesterOS shim + kernel linker script
  *	
  * Author: Tuna CICI
  */
@@ -8,8 +8,10 @@ OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
 ENTRY(_start)
 
-ENTRY_INIT_STACK_SIZE = 0x2000; /* 8 KiB */
-KERNEL_VMA_BASE = 0xFFFF000000000000; /* TTBR1_EL1 lower boundary */
+SHIM_STACK_SIZE = 0x2000; /* 8 KiB */
+KERNEL_STACK_SIZE = 0x10000; /* 64 KiB */
+
+ARM64_TTBR1_BASE = 0xFFFF000000000000; /* TTBR1_EL1 lower boundary (48-bit) */
 
 SECTIONS
 {
@@ -22,9 +24,9 @@ SECTIONS
         /* QEMU loads DTB at 0x00000000_40000000. So we skip over it (1MiB) */
         . = 0x40100000;
 
-        .start_sec :
+        .shim :
         {
-                _start_sec = .;
+                PROVIDE(_shim_start = .);
                 
                 Build/Entry.o(.text)
                 Build/Start.o(.text .text.*)
@@ -35,35 +37,46 @@ SECTIONS
                 Build/Entry.o(.data .data.*)
                 Build/Start.o(.data .data.*)
 
-                PROVIDE(edata_entry = .);
+                PROVIDE(_shim_bss_start = .);
 
                 Build/Entry.o(.bss .bss.* COMMON)
                 Build/Start.o(.bss .bss.* COMMON)
 
-                /* Reserve stack space for kernel */
+                /* Reserve space for Shim stack */
                 . = ALIGN(0x1000);
-                . += ENTRY_INIT_STACK_SIZE;
+                . += SHIM_STACK_SIZE;
+                PROVIDE (_shim_stack_top = .);
 
-                PROVIDE (init_stktop = .);
-
-                PROVIDE(end_entry = .);
                 . = ALIGN(0x1000);
+                PROVIDE(_shim_end = .);
         }
 
         /*
          * Kernel has two adresses:
-         * Load Memory Address (LMA): right after '.start_sec'
-         * Virtual Memory Address (VMA): right after 'KERNEL_VMA_BASE'
+         * Load Memory Address (LMA): located on top of Shim
+         * Virtual Memory Address (VMA): located at 'ARM64_TTBR1_BASE + Shim'
          *
          * https://sourceware.org/binutils/docs/ld/Basic-Script-Concepts.html
          */
         
-        /* kernel is located at right after .start_sec */
-        PROVIDE (kstart = .);
-        . = KERNEL_VMA_BASE + (ADDR(.start_sec) + SIZEOF(.start_sec));
-        PROVIDE (kvma_base = .);
+        PROVIDE (_k_phy_base = .);
 
-        .text : AT(ADDR(.start_sec) + SIZEOF(.start_sec))
+        /* Reserve space for the kernel stack */
+        . = ALIGN(0x1000);
+        . += KERNEL_STACK_SIZE;
+
+        PROVIDE(_k_code_base = .);
+
+        /* Switch to VMA */
+        . = ARM64_TTBR1_BASE + (ADDR(.shim) + SIZEOF(.shim));
+        PROVIDE (_k_vir_base = .);
+
+        /* Skip over the kernel stack */
+        . = ALIGN(0x1000);
+        . += KERNEL_STACK_SIZE;
+        PROVIDE(_k_stack_top = .);
+
+        .text : AT(_k_code_base)
         {
                 _code = .;
                 *(.text .text.* .gnu.linkonce.t.*)
@@ -71,26 +84,26 @@ SECTIONS
                 . = ALIGN(0x1000);
         }
         
-        .data : AT(ADDR(.text) + SIZEOF(.text))
+        .data : AT(LOADADDR(.text) + SIZEOF(.text))
         {
                 _data = .;
                 *(.data .data.*)
                 . = ALIGN(0x1000);
         }
 
-        .eh_frame : AT(ADDR(.data) + SIZEOF(.data))
+        .eh_frame : AT(LOADADDR(.data) + SIZEOF(.data))
         {
                 _ehframe = .;
                 *(.eh_frame)
                 . = ALIGN(0x1000);
         }
 
-        .bss : AT(ADDR(.eh_frame) + SIZEOF(.eh_frame))
+        .bss : AT(LOADADDR(.eh_frame) + SIZEOF(.eh_frame))
         {
                 _bss = .;
                 *(.bss .bss.* COMMON)
                 . = ALIGN(0x1000);
         }
         
-        PROVIDE (kend = .);
+        PROVIDE (_k_size = (. - _k_vir_base));
 }
