@@ -100,6 +100,7 @@ Here's an overall overview of the kernel. (TODO: Will be updated soon...)
 
 TODO: Overall OS specifications. What is what and the future goals.
 
+![](Media/Early_Memory_Mappings.png "Early Memory Mappings")
 ![](Media/Physical_Memory_Layout.png "Physical Memory Layout")
 
 ### Directory Structure
