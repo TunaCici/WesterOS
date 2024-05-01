@@ -91,9 +91,9 @@ static inline void fiq_disable(void)
 }
 
 #define MRS(reg, v)  asm volatile("mrs %x0," reg : "=r"(v))
-#define MSR(reg, v)                                \
-    do {                                           \
-        uint64_t _v = v;                             \
+#define MSR(reg, v)                                 \
+    do {                                            \
+        uint64_t _v = v;                            \
         asm volatile("msr " reg ",%x0" :: "r" (_v));\
     }while(0)
 
