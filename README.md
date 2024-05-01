@@ -122,9 +122,24 @@ TODO: Overall OS specifications. What is what and the future goals.
 `-- README.md          <- Main README
 ```
 
-### Bootstrapping
+### Bootstrapping (a.k.a. Shim)
 
-TODO: How does everything starts? Why the things I do are the way they are?
+Currently, the only way to boot WesterOS is on QEMU's AArch64 virt machine via the `-kernel` parameter.
+
+The part responsible for launching the kernel (and therefore the OS) is called Shim. 
+It is a small piece of code linked alongside the kernel image and responsible for bootstrapping the system.
+
+It handles some operations before the kernel takes control.
+
+1. Initialize CPU cores
+2. Setup the initial page tables
+3. Enable the MMU 
+4. Pass the following to the kernel (via it's stack)
+   * DTB physical base address
+   * DTB size in bytes
+   * Initial page tables
+
+Reference: [seL4 - elfloader](https://docs.sel4.systems/projects/elfloader/)
 
 State of ARM64 machine (e.g., registers) right before `kmain()`
 
