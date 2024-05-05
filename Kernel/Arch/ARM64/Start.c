@@ -16,7 +16,7 @@
 #include "MemoryLayout.h"
 
 /* in Main.c */
-extern void kmain(boot_sysinfo, uint64_t);
+extern void kmain(boot_sysinfo*);
 
 /* in Kernel/kernel.ld */
 extern uint64_t _k_phy_base;
@@ -39,6 +39,9 @@ uint64_t k_l1_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
 /* Lower half - TTBR0_EL1 */
 uint64_t u_l0_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
 uint64_t u_l1_pgtbl[ENTRY_SIZE] __attribute__((aligned(GRANULE_SIZE)));
+
+/* To be passed to kernel as parameters */
+boot_sysinfo boot_params = {0};
 
 void _utoa(uint64_t uval, char *buff, uint8_t base)
 {
@@ -290,8 +293,6 @@ void start(void)
         uint64_t val64 = 0;
         char buff[64] = {0};
 
-        boot_sysinfo boot_params = {0};
-
         /* Hard-coded device/board info */
         /* TODO: Replace this with a DTB parser */
         const char      *_cpuModel  = "Cortex A-72";
@@ -443,5 +444,5 @@ void start(void)
         /* Jump the stack pointer the stack pointer */
         asm volatile ("mov sp, %0" :: "r" (k_stack_top));
         
-        kmain(boot_params, 0);
+        kmain(&boot_params);
 }
