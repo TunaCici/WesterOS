@@ -19,6 +19,7 @@
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
 #include "Memory/Physical.h"
+#include "Memory/NBBS.h"
 #include "Memory/Virtual.h"
 
 /*
@@ -77,17 +78,26 @@ void kmain(boot_sysinfo* boot_params)
                 pageCount, (pageCount * PAGE_SIZE) / 1024
         );
 
+        /* 2. Init NBBS */
+        klog("[kmain] Initializing NBBS...\n");
+
+        if (nb_init(mem_start, mem_end - mem_start)) {
+                klog("[kmain] Failed to initialize NBBS ;(\n");
+        } else {
+                klog("[kmain] Initialized NBBS!\n");
+        }
+
         /* 2. Init PMM */
-        klog("[kmain] Initializing physical memory manager...\n");
+        // klog("[kmain] Initializing physical memory manager...\n");
+        // 
+        // uint64_t blockCount = init_allocator(
+        //         (const void *) boot_params->k_phy_base + boot_params->k_size + pageCount * PAGE_SIZE,
+        //         (const void *) mem_end
+        // );
 
-        uint64_t blockCount = init_allocator(
-                (const void *) boot_params->k_phy_base + boot_params->k_size + pageCount * PAGE_SIZE,
-                (const void *) mem_end
-        );
-
-        klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
-                blockCount, blockCount * 2
-        );
+        // klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
+        //         blockCount, blockCount * 2
+        // );
 
         /* 3. Init Kernel Page Tables & Enable MMU */
 

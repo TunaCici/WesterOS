@@ -80,6 +80,7 @@ SRCS = \
 	Kernel/Library/LibKern/Time.c \
 	Kernel/Memory/BootMem.c \
 	Kernel/Memory/Physical.c \
+	Kernel/Memory/NBBS.c \
 	Kernel/Memory/Virtual.c
 OBJS = ${SRCS:.c=.o}
 
@@ -165,7 +166,7 @@ debug:
 
 compiledb:
 	@echo "COMPILEDB -n make all"
-	@python3 -m compiledb -n make all
+	@compiledb -n make all
 	@echo "COMPILEDB -n make all ${GREEN}ok${NC}"
 
 all:
