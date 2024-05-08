@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "LibKern/String.h"
-#include "Libkern/String.h"
 
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
