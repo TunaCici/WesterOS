@@ -30,6 +30,10 @@
 #define OCC             0x10
 #define BUSY            (OCC | OCC_LEFT | OCC_RIGHT)
 
+#define EXP2(n) (0x1 << (n))
+#define LOG2(n) (64 - __builtin_clzll(n)) // 64 bit
+#define CAS(addr, cmp, val) __atomic_compare_exchange (addr, cmp, val, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
+
 /*
  * Public APIs
  *
