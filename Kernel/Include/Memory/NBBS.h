@@ -31,7 +31,7 @@
 #define BUSY            (OCC | OCC_LEFT | OCC_RIGHT)
 
 #define EXP2(n) (0x1 << (n))
-#define LOG2(n) (64 - __builtin_clzll(n)) // 64 bit
+#define LOG2_LOWER(n) (64 - __builtin_clzll(n) - 1) // 64 bit
 #define CAS(addr, cmp, val) __atomic_compare_exchange (addr, cmp, val, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
 
 /*
@@ -43,6 +43,14 @@
 int  nb_init(uint64_t base_addr, uint64_t size);
 void* nb_alloc(uint64_t size);
 void* nb_free(void *addr);
+
+/*
+ * Private APIs
+ *
+ * TODO: Explain.
+ */
+
+uint32_t try_alloc(uint32_t node);
 
 /*
  * Helpers
@@ -83,4 +91,22 @@ static inline uint8_t is_coal_buddy(uint8_t val, uint32_t child)
 static inline uint8_t is_free(uint8_t val)
 {
         return !(val & BUSY);
+}
+
+/* TODO: Ugly code; refactor */
+static inline uint32_t leftmost(uint32_t node, uint32_t depth)
+{
+        /* Index to level */
+        uint32_t level = LOG2_LOWER(node);
+
+        /* Size (in terms of leaf size) */
+        uint64_t block_size = EXP2(depth - level);
+
+        /* Offset within level */
+        uint64_t offset = node % EXP2(level);
+
+        /* Leftmost leaf */
+        uint32_t leftmost_leaf = EXP2(depth) + offset * block_size;
+
+        return leftmost_leaf;
 }
