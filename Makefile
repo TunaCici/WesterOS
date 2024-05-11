@@ -41,7 +41,7 @@ HOST_AR = ar
 INCLUDES = \
 	-I Kernel/Include -I Kernel/Arch \
 	-I Tests/googletest/googletest/include
-CCFLAGS = ${INCLUDES} -march=armv8-a -mtune=cortex-a72 -g \
+CCFLAGS = ${INCLUDES} -march=armv8-a -mtune=cortex-a72 -mno-outline-atomics -g \
 	-Wall -Wextra -ffreestanding -nostdlib -std=gnu99 -DDEBUG
 CXXFLAGS = ${INCLUDES} -march=armv8-a -mtune=cortex-a72 -g \
 	-Wall -Wextra -ffreestanding -nostdlib -std=c++20 -DDEBUG

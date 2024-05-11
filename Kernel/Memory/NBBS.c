@@ -80,7 +80,37 @@ int nb_init(uint64_t base, uint64_t size)
 
 uint32_t try_alloc(uint32_t node)
 {
-        return 1;
+        /* Try to mark as BUSY */
+        uint8_t free = 0;
+        if (!CAS(&tree[node], &free, BUSY)) {
+                return node;
+        }
+
+        uint32_t current = node;
+        uint32_t child = 0;
+
+        /* Propagate info about the occupancy up to the ancestor node(s) */
+        while (max_level < LEVEL(current)) {
+                child = current;
+                current = current >> 1;
+
+                uint8_t curr_val = 0;
+                uint8_t new_val = 0;
+
+                do {
+                        curr_val = tree[current];
+
+                        if (curr_val & OCC) {
+                                freenode(node, LEVEL(child));
+                                return current;
+                        }
+
+                        new_val = clean_coal(curr_val, child);
+                        new_val = mark(new_val, child);
+                } while (!CAS(&tree[current], &curr_val, new_val));
+        }
+
+        return 0;
 }
 
 void* nb_alloc(uint64_t size)
@@ -115,8 +145,8 @@ void* nb_alloc(uint64_t size)
                                 return (void*) (base_address + leaf * min_size);
                         } else {
                                 /* Skip the entire subtree [of failed] */
-                                uint32_t curr_level = LOG2_LOWER(i);
-                                uint32_t fail_level = LOG2_LOWER(failed_at);
+                                uint32_t curr_level = LEVEL(i);
+                                uint32_t fail_level = LEVEL(failed_at);
 
                                 uint32_t d = EXP2(curr_level - fail_level);
                                 i = (failed_at + 1) * d;
@@ -128,9 +158,14 @@ void* nb_alloc(uint64_t size)
         
 }
 
-void* nb_free(void *addr)
+void freenode(uint32_t node, uint32_t level)
 {
-        
+
+}
+
+void nb_free(void *addr)
+{
+
 }
 
 

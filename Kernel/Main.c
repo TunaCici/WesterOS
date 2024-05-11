@@ -81,7 +81,7 @@ void kmain(boot_sysinfo* boot_params)
         /* 2. Init NBBS */
         klog("[kmain] Initializing NBBS...\n");
 
-        if (nb_init(mem_start, 32 * 1024)) {
+        if (nb_init(mem_start + 0x1000000, 32 * 1024)) {
                 klog("[kmain] Failed to initialize NBBS ;(\n");
         } else {
                 klog("[kmain] Initialized NBBS (%u KiB)!\n", 64u);
@@ -89,13 +89,18 @@ void kmain(boot_sysinfo* boot_params)
 
         klog("[kmain] nb_alloc\n");
 
-        uint64_t *bruh = nb_alloc(4096);
+        for (int i = 0; i < 10; i++) {
+                uint64_t *bruh = nb_alloc(4096);
         
-        if (bruh) {
-                klog("[kmain] nb_alloc ok\n");
-        } else {
-                klog("[kmain] nb_alloc fail\n");
+                if (bruh) {
+                        klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
+                } else {
+                        klog("[kmain] nb_alloc fail\n");
+                }
+                
+                ksleep(1000);
         }
+
 
         /* 2. Init PMM */
         // klog("[kmain] Initializing physical memory manager...\n");
