@@ -89,18 +89,23 @@ void kmain(boot_sysinfo* boot_params)
 
         klog("[kmain] nb_alloc\n");
 
-        for (int i = 0; i < 10; i++) {
-                uint64_t *bruh = nb_alloc(4096);
+        uint64_t *bruh = nb_alloc(4096);
         
-                if (bruh) {
-                        klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
-                } else {
-                        klog("[kmain] nb_alloc fail\n");
-                }
-                
-                ksleep(1000);
+        if (bruh) {
+                klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
+        } else {
+                klog("[kmain] nb_alloc fail\n");
         }
 
+        nb_free(bruh);
+
+        bruh = nb_alloc(4096);
+        
+        if (bruh) {
+                klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
+        } else {
+                klog("[kmain] nb_alloc fail\n");
+        }
 
         /* 2. Init PMM */
         // klog("[kmain] Initializing physical memory manager...\n");

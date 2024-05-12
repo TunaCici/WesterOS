@@ -32,9 +32,20 @@
 
 #define EXP2(n) (0x1ULL << (n))
 #define LOG2_LOWER(n) (64ULL - __builtin_clzll(n) - 1ULL) // 64 bit
-#define CAS(addr, cmp, val) __atomic_compare_exchange_n(addr, cmp, val, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
+
+#define FAD(ptr, val) __atomic_add_fetch(ptr, val, __ATOMIC_SEQ_CST)
+#define BCAS(ptr, expected, desired) __atomic_compare_exchange_n(ptr, expected, desired, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
+#define VCAS(ptr, expected, desired) __atomic_compare_exchange_n(ptr, expected, desired, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? (*expected) : 0
 
 #define LEVEL(n) LOG2_LOWER(n)
+
+#define TRY_AGAIN_BEGIN(release_count)  \
+    do {                                \
+        uint32_t ts = release_count;
+
+#define TRY_AGAIN_END(release_count)    \
+        } while (ts != release_count);
+
 
 /*
  * Public APIs
@@ -53,7 +64,8 @@ void nb_free(void *addr);
  */
 
 uint32_t try_alloc(uint32_t node);
-void freenode(uint32_t node, uint32_t level);
+void freenode(uint32_t node, uint32_t upper_bound);
+void free_unmark(uint32_t node, uint32_t upper_bound);
 
 
 /*
@@ -61,6 +73,11 @@ void freenode(uint32_t node, uint32_t level);
  *
  * TODO:? Explain.
  */
+
+static inline uint8_t set_coal(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val | (COAL_LEFT >> (child % 2))));
+}
 
 static inline uint8_t clean_coal(uint8_t val, uint32_t child)
 {
@@ -74,7 +91,7 @@ static inline uint8_t mark(uint8_t val, uint32_t child)
 
 static inline uint8_t unmark(uint8_t val, uint32_t child)
 {
-        return ((uint8_t) (val & !((COAL_LEFT | OCC_LEFT) >> (child % 2))));
+        return ((uint8_t) (val & !((OCC_LEFT | COAL_LEFT) >> (child % 2))));
 }
 
 static inline uint8_t is_coal(uint8_t val, uint32_t child)
