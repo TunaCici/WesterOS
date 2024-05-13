@@ -20,13 +20,13 @@ extern "C" {
 /* Max size:              2 MiB */
 /* ---------------------------- */
 
-#define NBBS_TOTAL_MEMORY 64 * 1024 * 1024
-#define NBBS_MIN_SIZE 4 * 1024
+#define NBBS_TOTAL_MEMORY (64 * 1024 * 1024)
+#define NBBS_MIN_SIZE (4 * 1024)
 #define NBBS_MAX_ORDER 9
 
 #define NBBS_DEPTH 14
 #define NBBS_BASE_LEVEL 5
-#define NBBS_MAX_SIZE 2 * 1024 * 1204
+#define NBBS_MAX_SIZE (2 * 1024 * 1204)
 
 /* Runner information */
 /* ---------------------------- */
@@ -182,3 +182,59 @@ TEST(MemoryNBBS, nb_alloc)
         }
 }
 
+
+TEST(MemoryNBBS, nb_free)
+{
+        /* Bootmem is required */
+        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
+        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
+                bootmem_area[i] = 0;
+        }
+        bootmem_init((void*) bootmem_area);
+
+        uint8_t *playground = static_cast<uint8_t*>(
+                std::aligned_alloc(EXP2(NBBS_MAX_ORDER) * NBBS_MIN_SIZE, NBBS_TOTAL_MEMORY)
+        );
+        for (auto i = 0; i < NBBS_TOTAL_MEMORY; i++) {
+                playground[i] = 0;
+        }
+
+        nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY);
+
+        std::vector<uint8_t*> allocs = {};
+
+        auto block_count = NBBS_TOTAL_MEMORY / NBBS_MAX_SIZE;
+
+        for (auto i = NBBS_BASE_LEVEL; i <= NBBS_DEPTH; i++) {
+                /* Allocate all on current level */
+                for (auto j = 0; j < block_count; j++) {
+                        uint32_t block_size = __block_size(i);
+
+                        uint8_t *block = (uint8_t*) nb_alloc(block_size);
+                        EXPECT_TRUE(block != 0);
+
+                        allocs.push_back(block);
+                }
+
+                /* Free them all */
+                for (auto block : allocs) {
+                        nb_free(block);
+                }
+                
+                /* Should be able to allocate them, again */
+                for (auto j = 0; j < block_count; j++) {
+                        uint32_t block_size = __block_size(i);
+
+                        uint8_t *block = (uint8_t*) nb_alloc(block_size);
+                        EXPECT_TRUE(block != 0);
+                }
+
+                /* Free them again for the next iter */
+                for (auto block : allocs) {
+                        nb_free(block);
+                }
+
+                block_count *= 2;
+                allocs.clear();
+        }
+}
