@@ -25,6 +25,7 @@ static volatile uint32_t depth = 0;
 static volatile uint64_t base_level = 0;
 static volatile uint64_t min_size = 0;
 static volatile uint64_t max_size = 0;
+static volatile uint64_t max_order = 0;
 static volatile uint32_t release_count = 0;
 
 int nb_init(uint64_t base, uint64_t size)
@@ -42,8 +43,9 @@ int nb_init(uint64_t base, uint64_t size)
         total_memory = size;
         min_size = PAGE_SIZE;
         depth = LOG2_LOWER(total_memory / min_size);
-        base_level = 0;
-        max_size = EXP2(depth - base_level) * min_size;
+        max_order = 9;
+        max_size = EXP2(max_order) * min_size;
+        base_level = depth - max_order;
 
         /* Calculate required tree size - root node is at index 1  */
         uint32_t total_nodes = EXP2(depth + 1);
@@ -76,7 +78,7 @@ int nb_init(uint64_t base, uint64_t size)
         return 0;
 }
 
-uint32_t try_alloc(uint32_t node)
+uint32_t __try_alloc(uint32_t node)
 {
         /* Occupy the node */
         uint8_t free = 0;
@@ -99,7 +101,7 @@ uint32_t try_alloc(uint32_t node)
                         curr_val = tree[current];
 
                         if (curr_val & OCC) {
-                                freenode(node, LEVEL(child));
+                                __freenode(node, LEVEL(child));
                                 return current;
                         }
 
@@ -135,13 +137,13 @@ void* nb_alloc(uint64_t size)
 
         for (uint32_t i = start_node; i < end_node; i++) {
                 if (is_free(tree[i])) {
-                        uint32_t failed_at = try_alloc(i);
+                        uint32_t failed_at = __try_alloc(i);
 
                         if (!failed_at) {
                                 /* TODO: Explain what's going on here */
                                 uint32_t leaf = leftmost(i, depth) - EXP2(depth); 
                                 index[leaf] = i;
-
+                                
                                 return (void*) (base_address + leaf * min_size);
                         } else {
                                 /* Skip the entire subtree [of failed] */
@@ -162,7 +164,7 @@ void* nb_alloc(uint64_t size)
         return (void*) 0;
 }
 
-void free_unmark(uint32_t node, uint32_t upper_bound)
+void __unmark(uint32_t node, uint32_t upper_bound)
 {
         uint32_t current = node;
         uint32_t child = 0;
@@ -186,7 +188,7 @@ void free_unmark(uint32_t node, uint32_t upper_bound)
         } while (upper_bound < LEVEL(current) && !is_occ_buddy(new_val, child));
 }
 
-void freenode(uint32_t node, uint32_t upper_bound)
+void __freenode(uint32_t node, uint32_t upper_bound)
 {
         /* TODO: should I check for double frees? */
         if (is_free(tree[node])) {
@@ -221,7 +223,7 @@ void freenode(uint32_t node, uint32_t upper_bound)
 
         /* Phase 3. Propagate node release upward and possibly merge buddies */
         if (LEVEL(node) != base_level) {
-                free_unmark(node, upper_bound);
+                __unmark(node, upper_bound);
         }
 }
 
@@ -234,9 +236,22 @@ void nb_free(void *addr)
         }
 
         uint32_t n = (u_addr - base_address) / min_size;
-        freenode(index[n], base_level);
+        __freenode(index[n], base_level);
         FAD(&release_count, 1);
 }
 
+uint64_t __block_size(uint32_t level)
+{
+        return EXP2(depth - level) * min_size;
+}
+
+void __clean_block(void* addr, uint64_t size)
+{
+        if (!addr || !size) {
+                return;
+        }
+
+        memset(addr, 0x0, size);
+}
 
 #endif /* NBBS_H */

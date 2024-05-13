@@ -107,7 +107,9 @@ TEST_SRCS = \
 	Kernel/Memory/BootMem.c \
 	Tests/MemoryBootMem.cpp \
 	Kernel/Memory/Physical.c \
-	Tests/MemoryPhysical.cpp
+	Tests/MemoryPhysical.cpp \
+	Kernel/Memory/NBBS.c \
+	Tests/MemoryNBBS.cpp
 TEST_OBJS := ${filter %.o, ${TEST_SRCS:.c=.o}}
 TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 
@@ -231,6 +233,10 @@ test:
 	@echo "------------------------ ${MAGENTA} BINARIES ${NC} ------------------------"
 	@echo "${shell ${HOST_CC} --version | head -n 1}"
 	@echo "${shell ${HOST_CXX} --version | head -n 1}"
+
+	@echo "------------------------ ${YELLOW} CLEAN ${NC} ------------------------"
+	@echo "Deleting all object files (*.o)"
+	@find ${TEST_DIR} -name "*.o" -type f -delete
 
 	@echo "------------------------ ${BLUE} BUILD ${NC} ------------------------"
 	@${MAKE} all_test CROSS=False

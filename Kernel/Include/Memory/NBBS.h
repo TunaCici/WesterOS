@@ -39,14 +39,6 @@
 
 #define LEVEL(n) LOG2_LOWER(n)
 
-#define TRY_AGAIN_BEGIN(release_count)  \
-    do {                                \
-        uint32_t ts = release_count;
-
-#define TRY_AGAIN_END(release_count)    \
-        } while (ts != release_count);
-
-
 /*
  * Public APIs
  *
@@ -63,9 +55,18 @@ void nb_free(void *addr);
  * TODO: Explain.
  */
 
-uint32_t try_alloc(uint32_t node);
-void freenode(uint32_t node, uint32_t upper_bound);
-void free_unmark(uint32_t node, uint32_t upper_bound);
+uint32_t __try_alloc(uint32_t node);
+void __freenode(uint32_t node, uint32_t upper_bound);
+void __unmark(uint32_t node, uint32_t upper_bound);
+
+uint64_t __block_size(uint32_t level);
+void __clean_block(void* addr, uint64_t size);
+
+/*
+ * Diagnostics
+ *
+ * TODO: Explain.
+ */
 
 
 /*
@@ -73,6 +74,15 @@ void free_unmark(uint32_t node, uint32_t upper_bound);
  *
  * TODO:? Explain.
  */
+static inline uint8_t mark(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val | (OCC_LEFT >> (child % 2))));
+}
+
+static inline uint8_t unmark(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val & !((OCC_LEFT | COAL_LEFT) >> (child % 2))));
+}
 
 static inline uint8_t set_coal(uint8_t val, uint32_t child)
 {
@@ -82,16 +92,6 @@ static inline uint8_t set_coal(uint8_t val, uint32_t child)
 static inline uint8_t clean_coal(uint8_t val, uint32_t child)
 {
         return ((uint8_t) (val & !(COAL_LEFT >> (child % 2))));
-}
-
-static inline uint8_t mark(uint8_t val, uint32_t child)
-{
-        return ((uint8_t) (val | (OCC_LEFT >> (child % 2))));
-}
-
-static inline uint8_t unmark(uint8_t val, uint32_t child)
-{
-        return ((uint8_t) (val & !((OCC_LEFT | COAL_LEFT) >> (child % 2))));
 }
 
 static inline uint8_t is_coal(uint8_t val, uint32_t child)
