@@ -26,7 +26,7 @@ extern "C" {
 
 #define NBBS_DEPTH 14
 #define NBBS_BASE_LEVEL 5
-#define NBBS_MAX_SIZE (2 * 1024 * 1204)
+#define NBBS_MAX_SIZE (2 * 1024 * 1024)
 
 /* Runner information */
 /* ---------------------------- */
@@ -39,42 +39,42 @@ TEST(MemoryNBBS, __helpers)
 {
         uint8_t status = 0;
 
-        status = mark(status, 0);
+        status = nb_mark(status, 0);
         EXPECT_EQ(OCC_LEFT, status);
-        status = unmark(status, 0);
+        status = nb_unmark(status, 0);
         EXPECT_EQ(0, status);
 
-        status = mark(status, 1);
+        status = nb_mark(status, 1);
         EXPECT_EQ(OCC_RIGHT, status);
-        status = unmark(status, 1);
+        status = nb_unmark(status, 1);
         EXPECT_EQ(0, status);
 
-        status = set_coal(status, 0);
+        status = nb_set_coal(status, 0);
         EXPECT_EQ(COAL_LEFT, status);
-        EXPECT_NE(0, is_coal(status, 0));
-        EXPECT_EQ(0, clean_coal(status, 0));
+        EXPECT_NE(0, nb_is_coal(status, 0));
+        EXPECT_EQ(0, nb_clean_coal(status, 0));
         status = 0;
 
-        status = set_coal(status, 1);
+        status = nb_set_coal(status, 1);
         EXPECT_EQ(COAL_RIGHT, status);
-        EXPECT_NE(0, is_coal(status, 1));
-        EXPECT_EQ(0, clean_coal(status, 1));
+        EXPECT_NE(0, nb_is_coal(status, 1));
+        EXPECT_EQ(0, nb_clean_coal(status, 1));
         status = 0;
 
-        status = mark(status, 0);
-        EXPECT_NE(0, is_occ_buddy(status, 1));
-        status = mark(status, 1);
-        EXPECT_NE(0, is_occ_buddy(status, 0));
+        status = nb_mark(status, 0);
+        EXPECT_NE(0, nb_is_occ_buddy(status, 1));
+        status = nb_mark(status, 1);
+        EXPECT_NE(0, nb_is_occ_buddy(status, 0));
 
-        status = set_coal(status, 0);
-        EXPECT_NE(0, is_coal_buddy(status, 1));
-        status = set_coal(status, 1);
-        EXPECT_NE(0, is_coal_buddy(status, 0));
+        status = nb_set_coal(status, 0);
+        EXPECT_NE(0, nb_is_coal_buddy(status, 1));
+        status = nb_set_coal(status, 1);
+        EXPECT_NE(0, nb_is_coal_buddy(status, 0));
 
         status = 0;
-        EXPECT_NE(0, is_free(status));
+        EXPECT_NE(0, nb_is_free(status));
         status |= BUSY;
-        EXPECT_EQ(0, is_free(status));
+        EXPECT_EQ(0, nb_is_free(status));
 
         EXPECT_EQ(1, EXP2(0));
         EXPECT_EQ(2, EXP2(1));
@@ -83,25 +83,21 @@ TEST(MemoryNBBS, __helpers)
         EXPECT_EQ(0, LOG2_LOWER(1));
         EXPECT_EQ(1, LOG2_LOWER(2));
         EXPECT_EQ(10, LOG2_LOWER(1024));
-
-        EXPECT_EQ(0, LEVEL(1));
-        EXPECT_EQ(1, LEVEL(2));
-        EXPECT_EQ(10, LEVEL(1024));
 }
 
 TEST(MemoryNBBS, init)
 {
-        /* bootmem allocator is required - for now */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        /* Bootmem allocator is required */
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+
+        bootmem_init((void*) bootmem_arena);
 
         /* Alloc 1 max_size block, in case the base_addr is not aligned */
         uint8_t *playground = static_cast<uint8_t*>(
-                std::aligned_alloc(EXP2(NBBS_MAX_ORDER) * NBBS_MIN_SIZE, NBBS_TOTAL_MEMORY)
-        );
+                std::aligned_alloc(EXP2(NBBS_MAX_ORDER) * NBBS_MIN_SIZE,
+                        NBBS_TOTAL_MEMORY));
 
         for (auto i = 0; i < NBBS_TOTAL_MEMORY; i++) {
                 playground[i] = 0;
@@ -121,120 +117,158 @@ TEST(MemoryNBBS, init)
 }
 
 TEST(MemoryNBBS, nb_alloc)
-{
-        /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+{       
+        /* Bootmem allocator is required */
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
 
+        bootmem_init((void*) bootmem_arena);
+
+        /* initialize */
         uint8_t *playground = static_cast<uint8_t*>(
-                std::aligned_alloc(EXP2(NBBS_MAX_ORDER) * NBBS_MIN_SIZE, NBBS_TOTAL_MEMORY)
+                std::aligned_alloc(NBBS_MAX_SIZE, NBBS_TOTAL_MEMORY)
         );
-        for (auto i = 0; i < NBBS_TOTAL_MEMORY; i++) {
-                playground[i] = 0;
+        std::fill_n(playground, NBBS_TOTAL_MEMORY / sizeof(uint8_t), 0);
+
+        EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY));
+
+        std::vector<int*> allocs = {};
+
+        /* Boundry */
+        ASSERT_NE((void*) 0, nb_alloc(0));
+        ASSERT_NE((void*) 0, nb_alloc(NBBS_MIN_SIZE));
+        ASSERT_NE((void*) 0, nb_alloc(NBBS_MAX_SIZE));
+        EXPECT_EQ((void*) 0, nb_alloc(NBBS_MAX_SIZE + 1));
+
+        /* Allocate (on all orders) */
+        for (uint32_t i = 0; i <= NBBS_MAX_ORDER; i++) {
+                int *alloc = 0;
+                uint64_t alloc_size = nb_stat_block_size(i);
+
+                alloc = (int*) nb_alloc(alloc_size);
+                ASSERT_NE((void*) 0, alloc);
+
+                allocs.push_back(alloc);
         }
 
-        nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY);
+        /* Write */
+        for (size_t i = 0; i < allocs.size(); i++) {
+                int elem_count = nb_stat_block_size(i) / sizeof(int);
 
-        /* Size larger than max_size is NOT allowed */
-        void *block = nb_alloc(NBBS_MAX_SIZE + 1);
-        EXPECT_EQ(0, block);
-
-        /* Alloc 2 of each order (2 is just an arbitrary number) */
-        std::vector<uint8_t*> allocs = {};
-
-        /* TODO: Left here */
-        for (auto i = NBBS_DEPTH; NBBS_BASE_LEVEL < i; i--) {
-                uint32_t block_size = __block_size(i);
-
-                uint8_t *block1 = (uint8_t*) nb_alloc(block_size);
-                uint8_t *block2 = (uint8_t*) nb_alloc(block_size);
-
-                EXPECT_TRUE(block1 != 0);
-                EXPECT_TRUE(block2 != 0);
-
-                /* Write random value */
-                for (auto j = 0; j < __block_size(i); j++) {
-                        block1[j] = j % 256;
-                        block2[j] = j % 256;
-                }
-
-                allocs.push_back(block1);
-                allocs.push_back(block2);
+                EXPECT_EQ(
+                        allocs[i] + elem_count,
+                        std::fill_n(allocs[i], elem_count, i + 1)
+                );
         }
 
-        /* Read values */
-        auto curr_level = NBBS_DEPTH;
-        auto toggle = 1;
-        for (uint8_t* curr_block : allocs) {
-                for (auto i = 0; i < __block_size(curr_level); i++) {
-                        EXPECT_EQ(curr_block[i], i % 256);
-                }
-
-                /* Skip to next level after 2 consecutive blocks */
-                toggle++;
-                if (toggle % 3 == 0) {
-                        toggle = 1;
-                        curr_level--;
+        /* Verify */
+        for (size_t i = 0; i < allocs.size(); i++) {
+                for (uint64_t j = 0 ; j < nb_stat_block_size(i); i += sizeof(int)) {
+                        EXPECT_EQ((int) (i + 1), allocs[i][j]);
                 }
         }
+
+        /* Allocate rest of the blocks (order 0) */
+        int free_blocks = nb_stat_total_blocks(0);
+
+        for (uint32_t i = 0; i <= NBBS_MAX_ORDER; i++) {
+                int64_t used_blocks = nb_stat_used_blocks(i) * (1 << i);
+                free_blocks -= used_blocks;
+        }
+
+        for (int i = 0; i < free_blocks; i++) {
+                EXPECT_NE((void*) 0, nb_alloc(NBBS_MIN_SIZE));
+        }
+
+        /* No memory left */
+        EXPECT_EQ((void*) 0, nb_alloc(NBBS_MIN_SIZE));
 }
 
 
 TEST(MemoryNBBS, nb_free)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
 
+        bootmem_init((void*) bootmem_arena);
+
+        /* Initialize */
         uint8_t *playground = static_cast<uint8_t*>(
-                std::aligned_alloc(EXP2(NBBS_MAX_ORDER) * NBBS_MIN_SIZE, NBBS_TOTAL_MEMORY)
+                std::aligned_alloc(NBBS_MAX_SIZE, NBBS_TOTAL_MEMORY)
         );
-        for (auto i = 0; i < NBBS_TOTAL_MEMORY; i++) {
-                playground[i] = 0;
-        }
+        std::fill_n(playground, NBBS_TOTAL_MEMORY / sizeof(uint8_t), 0);
 
-        nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY);
+        EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY));
 
-        std::vector<uint8_t*> allocs = {};
+        std::vector<void*> allocs1 = {};
+        std::vector<void*> allocs2 = {};
 
-        auto block_count = NBBS_TOTAL_MEMORY / NBBS_MAX_SIZE;
+        /* NULL does nothing - shouldn't crash */
+        nb_free((void*) 0);
 
-        for (auto i = NBBS_BASE_LEVEL; i <= NBBS_DEPTH; i++) {
-                /* Allocate all on current level */
-                for (auto j = 0; j < block_count; j++) {
-                        uint32_t block_size = __block_size(i);
+        /* Try on all orders */
+        for (uint32_t i = 0; i <= NBBS_MAX_ORDER; i++) {
+                uint64_t block_count = nb_stat_total_blocks(i);
 
-                        uint8_t *block = (uint8_t*) nb_alloc(block_size);
-                        EXPECT_TRUE(block != 0);
-
-                        allocs.push_back(block);
+                /* Alloc all */
+                for (uint64_t j = 0; j < block_count; j++) {
+                        void *alloc = nb_alloc(nb_stat_block_size(i));
+                
+                        ASSERT_NE((void*) 0, alloc);
+                        allocs1.push_back(alloc);
                 }
 
-                /* Free them all */
-                for (auto block : allocs) {
-                        nb_free(block);
+                /* Verify all allocated */
+                ASSERT_EQ(0, block_count - nb_stat_used_blocks(i));
+
+                /* Free all */
+                for (auto alloc : allocs1) {
+                        nb_free(alloc);
                 }
                 
-                /* Should be able to allocate them, again */
-                for (auto j = 0; j < block_count; j++) {
-                        uint32_t block_size = __block_size(i);
+                /* Verify all freed */
+                ASSERT_EQ(0, nb_stat_used_blocks(i));
 
-                        uint8_t *block = (uint8_t*) nb_alloc(block_size);
-                        EXPECT_TRUE(block != 0);
+                /* Alloc all again */
+                for (uint64_t j = 0; j < block_count; j++) {
+                        void *alloc = nb_alloc(nb_stat_block_size(i));
+                
+                        ASSERT_NE((void*) 0, alloc);
+                        allocs2.push_back(alloc);
                 }
 
-                /* Free them again for the next iter */
-                for (auto block : allocs) {
-                        nb_free(block);
+                /* Same allocs should happen */
+                ASSERT_EQ(allocs1, allocs2);
+
+                /* Clean */
+                for (auto alloc : allocs1) {
+                        nb_free(alloc);
                 }
 
-                block_count *= 2;
-                allocs.clear();
+                allocs1.clear();
+                allocs2.clear();
         }
+
+        /* Coalescing */
+        // This alloc is going to prevent others to coalesce
+        void *guard = nb_alloc(nb_stat_block_size(NBBS_MIN_SIZE));
+        ASSERT_NE((void*) 0, guard);
+
+        /* Alloc rest of the blocks on max_order */
+        // We decrement by 1 because the first one is occuiped by 'guard'
+        for (uint32_t i = 0; i < nb_stat_total_blocks(NBBS_MAX_ORDER)-1; i++) {
+                ASSERT_NE((void*) 0, nb_alloc(NBBS_MAX_SIZE));
+        }
+
+        /* Can't alloc due to 'guard' occupying higher blocks */
+        ASSERT_EQ((void*) 0x0, nb_alloc(NBBS_MAX_SIZE));
+
+        /* Free and cause coalesing */
+        nb_free(guard);
+
+        /* Can alloc */
+        ASSERT_NE((void*) 0, nb_alloc(NBBS_MAX_SIZE));
 }
