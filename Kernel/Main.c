@@ -51,12 +51,12 @@ void kmain(boot_sysinfo* boot_params)
                 wfi();
         }
 
-        if ((mem_end - mem_start) < BM_ARENA_SIZE * PAGE_SIZE) {
+        if ((mem_end - mem_start) < BM_ARENA_SIZE_BYTE) {
                 klog("[kmain] Not enough memory available to boot :(\n");
                 klog("[kmain] ---- Detected memory size: %lu MiB\n",
                         (mem_end - mem_start) / (1024 * 1024));
                 klog("[kmain] ---- Required minimum size: %u MiB\n",
-                        (BM_ARENA_SIZE * PAGE_SIZE) / (1024 * 1024));
+                        (BM_ARENA_SIZE_BYTE) / (1024 * 1024));
                 wfi();
         }
 
@@ -71,12 +71,11 @@ void kmain(boot_sysinfo* boot_params)
         /* 1. Init BootMem */
         klog("[kmain] Initializing early memory manager...\n");
 
-        uint64_t pageCount = bootmem_init(
+        uint64_t bootmem_size = bootmem_init(
                 (const void*) (boot_params->k_phy_base + boot_params->k_size));
 
-        klog("[kmain] Pages available: %lu (%lu KiB) in bootmem\n",
-                pageCount, (pageCount * PAGE_SIZE) / 1024
-        );
+        klog("[kmain] Available size in bootmem: %lu KiB\n",
+                bootmem_size / 1024);
 
         /* 2. Init NBBS */
         klog("[kmain] Initializing NBBS...\n");
@@ -84,7 +83,7 @@ void kmain(boot_sysinfo* boot_params)
         if (nb_init(mem_start + 0x1000000, 32 * 1024)) {
                 klog("[kmain] Failed to initialize NBBS ;(\n");
         } else {
-                klog("[kmain] Initialized NBBS (%u KiB)!\n", 64u);
+                klog("[kmain] Initialized NBBS (%lu KiB)!\n", nb_stat_total_memory());
         }
 
         klog("[kmain] nb_alloc\n");
@@ -95,6 +94,16 @@ void kmain(boot_sysinfo* boot_params)
                 klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
         } else {
                 klog("[kmain] nb_alloc fail\n");
+        }
+
+        klog("[kmain] nb_alloc2\n");
+
+        uint64_t *bruh2 = nb_alloc(4096);
+        
+        if (bruh2) {
+                klog("[kmain] nb_alloc2 ok (0x%p)\n", bruh2);
+        } else {
+                klog("[kmain] nb_alloc2 fail\n");
         }
 
         nb_free(bruh);
