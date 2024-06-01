@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include <algorithm>
 #include <cstdint>
 
 extern "C" {
@@ -9,56 +10,53 @@ extern "C" {
 
 TEST(MemoryBootMem, init)
 {
-        uint8_t *playground = new uint8_t[(BM_ARENA_SIZE + 1) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                playground[i] = 0;
-        }
+        uint8_t *playground = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(playground, BM_ARENA_SIZE_BYTE, 0x0);
 
-        uint32_t pageCount = bootmem_init((void*) playground);
-        EXPECT_EQ(pageCount, BM_ARENA_SIZE);
+        uint32_t avail_bytes = bootmem_init((void*) playground);
+        EXPECT_EQ(avail_bytes, BM_ARENA_SIZE_BYTE);
 }
 
 TEST(MemoryBootMem, alloc)
 {
-        uint8_t *playground = new uint8_t[(BM_ARENA_SIZE + 1) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                playground[i] = 0;
-        }
+        uint8_t *playground = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
 
-        playground = (uint8_t*) PALIGN(playground);
+        std::fill_n(playground, BM_ARENA_SIZE_BYTE, 0x0);
 
-        uint32_t pageCount = bootmem_init((void*) playground);
-        EXPECT_EQ(pageCount, BM_ARENA_SIZE);
+        uint32_t avail_bytes = bootmem_init((void*) playground);
+        EXPECT_EQ(avail_bytes, BM_ARENA_SIZE_BYTE);
 
-        /* stupid request - 0 */
+        /* 0 maps to PAGE_SIZE */
         void *tmp = bootmem_alloc(0);
-        EXPECT_TRUE(tmp == nullptr);
-
+        EXPECT_EQ(tmp, playground);
 
         /* more than what's allowed */
-        tmp = bootmem_alloc(BM_ARENA_SIZE + 1);
+        tmp = bootmem_alloc(BM_ARENA_SIZE_BYTE + 1);
         EXPECT_TRUE(tmp == nullptr);
 
         /* simple */
-        tmp = bootmem_alloc(1);
-        EXPECT_EQ(tmp, playground);
+        tmp = bootmem_alloc(1024);
+        EXPECT_EQ(tmp, playground + PAGE_SIZE);
 
         /* does the map work? */
-        tmp = bootmem_alloc(1);
-        EXPECT_EQ(tmp, playground + PAGE_SIZE);
-        tmp = bootmem_alloc(2);
-        EXPECT_EQ(tmp, playground + PAGE_SIZE * 2);
+        tmp = bootmem_alloc(PAGE_SIZE);
+        EXPECT_EQ(tmp, playground + 2 * PAGE_SIZE);
 
-        /* EVERYONE!! */
-        tmp = bootmem_alloc(BM_ARENA_SIZE - 4);
-        EXPECT_EQ(tmp, playground + PAGE_SIZE * 4);
+        tmp = bootmem_alloc(2 * PAGE_SIZE);
+        EXPECT_EQ(tmp, playground + 3 * PAGE_SIZE);
+
+        /* rest of the arena */
+        tmp = bootmem_alloc(BM_ARENA_SIZE_BYTE - 5 * PAGE_SIZE);
+        EXPECT_EQ(tmp, playground + 5 * PAGE_SIZE);
 
         /* no more space;( */
         tmp = bootmem_alloc(1);
         EXPECT_TRUE(tmp == nullptr);
 
         /* addresses are valid? */
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
+        for (auto i = 0; i < BM_ARENA_SIZE_BYTE; i++) {
                 playground[i] = 42;
                 EXPECT_EQ(playground[i], 42);
         }

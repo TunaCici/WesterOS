@@ -18,7 +18,7 @@ static volatile uint8_t map[BM_MAP_SIZE] = {0};
 
 uint8_t __calc_fitting(const uint32_t startIdx, const uint32_t numPages)
 {
-        if (BM_ARENA_SIZE < startIdx + numPages) {
+        if (BM_ARENA_SIZE_PAGE < startIdx + numPages) {
                 return 0;
         }
 
@@ -50,37 +50,39 @@ uint32_t bootmem_init(const void *startAddr)
                 map[i] = 0;
         }
 
-        retValue = BM_ARENA_SIZE;
+        retValue = BM_ARENA_SIZE_BYTE;
 
         return retValue;
 }
 
-void* bootmem_alloc(const uint32_t numPages)
+void* bootmem_alloc(uint32_t size)
 {
-        void *retAddr = 0;
-
-        if (numPages == 0 || BM_ARENA_SIZE < numPages) {
-                return retAddr;
+        if (BM_ARENA_SIZE_BYTE < size) {
+                return (void*) 0;
         }
 
-        for (uint32_t i = 0; i < BM_ARENA_SIZE; i++) {
+        if (size < PAGE_SIZE) {
+                size = PAGE_SIZE;
+        }
+        
+        uint32_t req_pages = ((size + PAGE_SIZE - 1) / PAGE_SIZE);
+
+        for (uint32_t i = 0; i < BM_ARENA_SIZE_PAGE; i++) {
                 /* Skip used areas */
                 if (BM_MAP_GET(map, i)) {
                         continue;
                 }
 
-                uint8_t fits = __calc_fitting(i, numPages);
+                uint8_t fits = __calc_fitting(i, req_pages);
 
                 if (fits) {
-                        __mark_used(i, i + numPages);
+                        __mark_used(i, i + req_pages);
 
-                        retAddr = (void*) BM_IDX_TO_ADDR(i, baseAddr);
-                        
-                        break;
+                        return (void*) BM_IDX_TO_ADDR(i, baseAddr);
                 }
         }
 
-        return retAddr;
+        return (void*) 0;
 }
 
 /* START DEBUG ONLY */
