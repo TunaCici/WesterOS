@@ -48,11 +48,11 @@ TEST(MemoryPhysical, __budy)
 TEST(MemoryPhysical, init)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+        
+        bootmem_init((void*) bootmem_arena);
 
         uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
@@ -89,11 +89,11 @@ TEST(MemoryPhysical, init)
 TEST(MemoryPhysical, __block_to_idx)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+
+        bootmem_init((void*) bootmem_arena);
 
         uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
@@ -121,11 +121,11 @@ TEST(MemoryPhysical, __block_to_idx)
 TEST(MemoryPhysical, alloc_page)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+
+        bootmem_init((void*) bootmem_arena);
 
         uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
@@ -173,11 +173,11 @@ TEST(MemoryPhysical, alloc_page)
 TEST(MemoryPhysical, alloc_pages)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+
+        bootmem_init((void*) bootmem_arena);
 
         uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
@@ -237,11 +237,11 @@ TEST(MemoryPhysical, alloc_pages)
 TEST(MemoryPhysical, free_page)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+
+        bootmem_init((void*) bootmem_arena);
 
         uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
@@ -303,11 +303,11 @@ TEST(MemoryPhysical, free_page)
 TEST(MemoryPhysical, free_pages)
 {
         /* Bootmem is required */
-        uint8_t *bootmem_area = new uint8_t[(BM_ARENA_SIZE) * PAGE_SIZE];
-        for (auto i = 0; i < BM_ARENA_SIZE * PAGE_SIZE; i++) {
-                bootmem_area[i] = 0;
-        }
-        bootmem_init((void*) bootmem_area);
+        uint8_t *bootmem_arena = static_cast<uint8_t*>(
+                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
+        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
+
+        bootmem_init((void*) bootmem_arena);
 
         uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
         for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {

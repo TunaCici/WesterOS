@@ -28,7 +28,7 @@ static volatile free_area_t buddyPmm[MAX_ORDER] = {0};
 void __clear_page_area(uint8_t *addr, uint32_t size)
 {
         for (uint32_t i = 0; i < size; i++) {
-                addr[i] = 0x00;
+                addr[i] = 0;
         }
 }
 
@@ -175,13 +175,11 @@ uint64_t init_allocator(const void *start, const void *end)
                 bitmapSize = (bitmapSize + 7) & ~7; /* Align to uint8_t */
                 bitmapSize = bitmapSize / 8; /* To bytes */
 
-                uint32_t reqPages = (bitmapSize + PAGE_SIZE) / PAGE_SIZE;
-
                 buddyPmm[i].listHead.next = 0;
                 buddyPmm[i].listHead.prev = 0;
-                buddyPmm[i].map = (uint8_t*) bootmem_alloc(reqPages);
+                buddyPmm[i].map = (uint8_t*) bootmem_alloc(bitmapSize);
 
-                __clear_page_area(buddyPmm[i].map, reqPages);
+                __clear_page_area(buddyPmm[i].map, bitmapSize);
         }
 
         retValue = blockCount;
