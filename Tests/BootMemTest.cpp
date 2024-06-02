@@ -8,7 +8,7 @@ extern "C" {
         #include "Memory/BootMem.h"
 }
 
-TEST(MemoryBootMem, init)
+TEST(BootMem, init)
 {
         uint8_t *playground = static_cast<uint8_t*>(
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
@@ -18,7 +18,7 @@ TEST(MemoryBootMem, init)
         EXPECT_EQ(avail_bytes, BM_ARENA_SIZE_BYTE);
 }
 
-TEST(MemoryBootMem, alloc)
+TEST(BootMem, alloc)
 {
         uint8_t *playground = static_cast<uint8_t*>(
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));

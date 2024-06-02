@@ -6,7 +6,7 @@ extern "C" {
         #include "Memory/PageDef.h"
 }
 
-TEST(MemoryPageDef, PALIGN)
+TEST(PageDef, PALIGN)
 {
         uint8_t *someAddr = (uint8_t*) 0x0;
 
@@ -29,7 +29,7 @@ TEST(MemoryPageDef, PALIGN)
         }
 }
 
-TEST(MemoryPageDef, CUSTOM_ALIGN)
+TEST(PageDef, CUSTOM_ALIGN)
 {
         uint8_t *someAddr = (uint8_t*) 0x0;
         constexpr int ALLIGNMENT = 64; /* bytes */

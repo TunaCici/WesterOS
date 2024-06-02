@@ -35,7 +35,7 @@ extern "C" {
 
 #define NBBS_THREADS 4
 
-TEST(MemoryPhysical, __helpers)
+TEST(Physical, __helpers)
 {
         uint8_t status = 0;
 
@@ -85,7 +85,7 @@ TEST(MemoryPhysical, __helpers)
         EXPECT_EQ(10, LOG2_LOWER(1024));
 }
 
-TEST(MemoryPhysical, init)
+TEST(Physical, init)
 {
         /* Bootmem allocator is required */
         uint8_t *bootmem_arena = static_cast<uint8_t*>(
@@ -116,7 +116,7 @@ TEST(MemoryPhysical, init)
         EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY));
 }
 
-TEST(MemoryPhysical, nb_alloc)
+TEST(Physical, nb_alloc)
 {       
         /* Bootmem allocator is required */
         uint8_t *bootmem_arena = static_cast<uint8_t*>(
@@ -186,7 +186,7 @@ TEST(MemoryPhysical, nb_alloc)
 }
 
 
-TEST(MemoryPhysical, nb_free)
+TEST(Physical, nb_free)
 {
         /* Bootmem is required */
         uint8_t *bootmem_arena = static_cast<uint8_t*>(

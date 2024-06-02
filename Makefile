@@ -102,11 +102,11 @@ ASM_OBJS = ${ASMS:.S=.o}
 
 # Test source files (must be hardware-independent)
 TEST_SRCS = \
-	Tests/MemoryPageDef.cpp \
+	Tests/PageDefTest.cpp \
+	Tests/BootMemTest.cpp \
+	Tests/PhysicalTest.cpp \
 	Kernel/Memory/BootMem.c \
-	Tests/MemoryBootMem.cpp \
-	Kernel/Memory/Physical.c \
-	Tests/MemoryPhysical.cpp
+	Kernel/Memory/Physical.c
 TEST_OBJS := ${filter %.o, ${TEST_SRCS:.c=.o}}
 TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 
