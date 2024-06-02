@@ -71,7 +71,7 @@ void kmain(boot_sysinfo* boot_params)
         klog("[kmain] Initializing early memory manager...\n");
 
         uint64_t bootmem_size = bootmem_init(
-                (const void*) (boot_params->k_phy_base + boot_params->k_size));
+                (boot_params->k_phy_base + boot_params->k_size));
 
         klog("[kmain] Available size in bootmem: %lu MiB\n",
                 bootmem_size / 1024 / 1024);

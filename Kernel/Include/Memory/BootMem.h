@@ -21,9 +21,9 @@
 #define BM_MAP_SET(map, idx) (map[idx / 8] |= (1 << (idx % 8)))
 #define BM_MAP_RST(map, idx) (map[idx / 8] &= ~(1 << (idx % 8)))
 
-#define BM_IDX_TO_ADDR(idx, baseAddr) (baseAddr + PAGE_SIZE * idx)
+#define BM_IDX_TO_ADDR(idx, base) (base + PAGE_SIZE * idx)
 
-uint32_t bootmem_init(const void *startAddr);
+uint32_t bootmem_init(const uint64_t base);
 void*    bootmem_alloc(uint32_t size);
 
 /* START DEBUG ONLY */

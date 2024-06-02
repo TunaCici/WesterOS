@@ -92,7 +92,7 @@ TEST(MemoryPhysical, init)
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
         std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
 
-        bootmem_init((void*) bootmem_arena);
+        bootmem_init((uint64_t) bootmem_arena);
 
         /* Alloc 1 max_size block, in case the base_addr is not aligned */
         uint8_t *playground = static_cast<uint8_t*>(
@@ -123,7 +123,7 @@ TEST(MemoryPhysical, nb_alloc)
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
         std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
 
-        bootmem_init((void*) bootmem_arena);
+        bootmem_init((uint64_t) bootmem_arena);
 
         /* initialize */
         uint8_t *playground = static_cast<uint8_t*>(
@@ -193,7 +193,7 @@ TEST(MemoryPhysical, nb_free)
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
         std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
 
-        bootmem_init((void*) bootmem_arena);
+        bootmem_init((uint64_t) bootmem_arena);
 
         /* Initialize */
         uint8_t *playground = static_cast<uint8_t*>(

@@ -13,17 +13,17 @@
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
 
-static volatile void *baseAddr = 0;
+static volatile uint64_t base_addr = 0x0;
 static volatile uint8_t map[BM_MAP_SIZE] = {0};
 
-uint8_t __calc_fitting(const uint32_t startIdx, const uint32_t numPages)
+uint8_t __calc_fitting(const uint32_t start_idx, const uint32_t num_pages)
 {
-        if (BM_ARENA_SIZE_PAGE < startIdx + numPages) {
+        if (BM_ARENA_SIZE_PAGE < start_idx + num_pages) {
                 return 0;
         }
 
-        for (uint32_t i = 0; i < numPages; i++) {
-                if (BM_MAP_GET(map, startIdx + i) == 1) {
+        for (uint32_t i = 0; i < num_pages; i++) {
+                if (BM_MAP_GET(map, start_idx + i) == 1) {
                         /* it doesn't fit :( */
                         return 0;
                 }
@@ -32,27 +32,23 @@ uint8_t __calc_fitting(const uint32_t startIdx, const uint32_t numPages)
         return 1;
 }
 
-void __mark_used(const uint32_t startIdx, const uint16_t endIdx)
+void __mark_used(const uint32_t start_idx, const uint32_t end_idx)
 {
-        for (uint32_t i = startIdx; i < endIdx; i++) {
+        for (uint32_t i = start_idx; i < end_idx; i++) {
                 BM_MAP_SET(map, i);
         }
 }
 
-uint32_t bootmem_init(const void *startAddr)
+uint32_t bootmem_init(const uint64_t base)
 {
-        uint32_t retValue = 0; /* Pages available */
-
-        baseAddr = (void*) PALIGN(startAddr);
+        base_addr = PALIGN(base);
 
         /* Initialize the bitmap */
         for (uint32_t i = 0; i < BM_MAP_SIZE; i++) {
                 map[i] = 0;
         }
 
-        retValue = BM_ARENA_SIZE_BYTE;
-
-        return retValue;
+        return BM_ARENA_SIZE_BYTE;
 }
 
 void* bootmem_alloc(uint32_t size)
@@ -77,8 +73,8 @@ void* bootmem_alloc(uint32_t size)
 
                 if (fits) {
                         __mark_used(i, i + req_pages);
-
-                        return (void*) BM_IDX_TO_ADDR(i, baseAddr);
+ 
+                        return (void*) BM_IDX_TO_ADDR(i, base_addr);
                 }
         }
 

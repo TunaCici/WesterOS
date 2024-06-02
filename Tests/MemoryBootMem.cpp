@@ -14,7 +14,7 @@ TEST(MemoryBootMem, init)
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
         std::fill_n(playground, BM_ARENA_SIZE_BYTE, 0x0);
 
-        uint32_t avail_bytes = bootmem_init((void*) playground);
+        uint32_t avail_bytes = bootmem_init((uint64_t) playground);
         EXPECT_EQ(avail_bytes, BM_ARENA_SIZE_BYTE);
 }
 
@@ -25,7 +25,7 @@ TEST(MemoryBootMem, alloc)
 
         std::fill_n(playground, BM_ARENA_SIZE_BYTE, 0x0);
 
-        uint32_t avail_bytes = bootmem_init((void*) playground);
+        uint32_t avail_bytes = bootmem_init((uint64_t) playground);
         EXPECT_EQ(avail_bytes, BM_ARENA_SIZE_BYTE);
 
         /* 0 maps to PAGE_SIZE */
