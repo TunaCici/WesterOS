@@ -19,7 +19,6 @@
 #include "Memory/PageDef.h"
 #include "Memory/BootMem.h"
 #include "Memory/Physical.h"
-#include "Memory/NBBS.h"
 #include "Memory/Virtual.h"
 
 /*
@@ -74,59 +73,19 @@ void kmain(boot_sysinfo* boot_params)
         uint64_t bootmem_size = bootmem_init(
                 (const void*) (boot_params->k_phy_base + boot_params->k_size));
 
-        klog("[kmain] Available size in bootmem: %lu KiB\n",
-                bootmem_size / 1024);
-
-        /* 2. Init NBBS */
-        klog("[kmain] Initializing NBBS...\n");
-
-        if (nb_init(mem_start + 0x1000000, 32 * 1024)) {
-                klog("[kmain] Failed to initialize NBBS ;(\n");
-        } else {
-                klog("[kmain] Initialized NBBS (%lu KiB)!\n", nb_stat_total_memory());
-        }
-
-        klog("[kmain] nb_alloc\n");
-
-        uint64_t *bruh = nb_alloc(4096);
-        
-        if (bruh) {
-                klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
-        } else {
-                klog("[kmain] nb_alloc fail\n");
-        }
-
-        klog("[kmain] nb_alloc2\n");
-
-        uint64_t *bruh2 = nb_alloc(4096);
-        
-        if (bruh2) {
-                klog("[kmain] nb_alloc2 ok (0x%p)\n", bruh2);
-        } else {
-                klog("[kmain] nb_alloc2 fail\n");
-        }
-
-        nb_free(bruh);
-
-        bruh = nb_alloc(4096);
-        
-        if (bruh) {
-                klog("[kmain] nb_alloc ok (0x%p)\n", bruh);
-        } else {
-                klog("[kmain] nb_alloc fail\n");
-        }
+        klog("[kmain] Available size in bootmem: %lu MiB\n",
+                bootmem_size / 1024 / 1024);
 
         /* 2. Init PMM */
-        // klog("[kmain] Initializing physical memory manager...\n");
-        // 
-        // uint64_t blockCount = init_allocator(
-        //         (const void *) boot_params->k_phy_base + boot_params->k_size + pageCount * PAGE_SIZE,
-        //         (const void *) mem_end
-        // );
+        klog("[kmain] Initializing physical memory manager...\n");
 
-        // klog("[kmain] 2 MiB blocks available: %lu (%lu MiB) in pmm\n",
-        //         blockCount, blockCount * 2
-        // );
+        if (nb_init(mem_start, mem_end - mem_start)) {
+                klog("[kmain] Failed to initialize NBBS ;(\n");
+                wfi();
+        }
+
+        klog("[kmain] Available size in PMM: %lu MiB\n",
+                nb_stat_total_memory() / 1024 / 1024);
 
         /* 3. Init Kernel Page Tables & Enable MMU */
 

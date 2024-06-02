@@ -1,65 +1,167 @@
 /*
- * Physical memory manager using Binary-Buddy System
+ * Non-Blocking Buddy System definitions
  *
- * The algorithm is described in D.S. Hirschberg:
- * “A class of dynamic memory allocation algorithms”
+ * As described in:
+ * "A Non-blocking Buddy System for Scalable Memory Allocation on Multi-core 
+ * Machines by" R. Marotta, M. Ianni, A. Scarselli, A. Pellegrini and F. Quaglia
  *
- * URL: https://doi.org/10.1145/362375.362392
- *
- * Influenced from:
- * URL: https://www.kernel.org/doc/gorman/html/understand/understand009.html
- * URL: https://people.engr.tamu.edu/bettati/Courses/313/2014A/Labs/mp1_fibo.pdf
+ * Reference:
+ * https://ieeexplore.ieee.org/document/9358002
+ * https://github.com/HPDCS/NBBS
  *
  * Author: Tuna CICI
  */
 
-#ifndef PHYSICAL_H
-#define PHYSICAL_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef NBBS_H
+#define NBBS_H
 
 #include <stdint.h>
 
-#include "Memory/PageDef.h"
+/*
+ * Tree node status bits:
+ *
+ *  7       5          4            3            2          1          0
+ * +---------+----------+------------+------------+----------+----------+
+ * | ignored | occupied |    left    |    rigth   |   left   |   right  |
+ * |         |          | coalescent | coalescent | occupied | occupied |
+ * +---------+----------+------------+------------+----------+----------+
+ */
 
-#define MAX_ORDER 10 /* Block size: 2^0 ... 2^(MAX_ORDER - 1) * PAGE_SIZE */
+#define OCC_RIGHT       ((uint8_t) 0x1)
+#define OCC_LEFT        ((uint8_t) 0x2)
+#define COAL_RIGHT      ((uint8_t) 0x4)
+#define COAL_LEFT       ((uint8_t) 0x8)
+#define OCC             ((uint8_t) 0x10)
+#define BUSY            (OCC | OCC_LEFT | OCC_RIGHT)
 
-#define SIZEOF_BLOCK(order) ((0x1 << (order)) * PAGE_SIZE ) /* Bytes */
+/*
+ * Configuration
+ */
 
-#define BUDDY_MARK_USED(map, idx) (map[idx / 8] |= (1 << (idx % 8)))
-#define BUDDY_MARK_FREE(map, idx) (map[idx / 8] &= ~(1 << (idx % 8)))
-#define BUDDY_GET_MARK(map, idx) (map[idx / 8] & (1 << (idx % 8)))
+#define NB_MIN_SIZE 4096ULL /* bytes */
+#define NB_MAX_ORDER 9U
+#define NB_MALLOC(size) bootmem_alloc(size)
 
-/* Used to 'address' blocks in a free_area_t (e.g. 0x4000 -> 0x8000) */
-/* Similar to the 'run' structure on xv6: */
-/*      https://github.com/mit-pdos/xv6-public/blob/master/kalloc.c */
-typedef struct list_head_struct {
-        struct list_head_struct *next;
-        struct list_head_struct *prev;
-} list_head_t;
+/*
+ * Math functions
+ */
 
-typedef struct free_area_struct {
-        list_head_t listHead;
-        uint8_t *map;
-} free_area_t;
+#define EXP2(n) (0x1ULL << (n))
+#define LOG2_LOWER(n) (64ULL - __builtin_clzll(n) - 1ULL) // 64 bit
 
-uint64_t init_allocator(const void *start, const void *end);
+/*
+ * Atomic operations:
+ *
+ * FAD: Fetch-And-Decrement
+ * BCAS: Binary-Compare-And-Swap
+ * VCAS: Value-Compare-And-Swap
+ */
 
-/* Private functions - TEST ONLY */
-void __clear_page_area(uint8_t *addr, uint32_t size);
-uint64_t __block_to_idx(const list_head_t *block, const uint32_t order);
-list_head_t* __buddy(const list_head_t *block, const uint32_t order);
-void __try_to_mark(list_head_t *block, const uint32_t order);
-void __append_to_order(list_head_t *block, const uint32_t order);
-void __remove_from_order(list_head_t *block, const uint32_t order);
+#define FAD(ptr, val) \
+        __atomic_add_fetch(ptr, val, __ATOMIC_SEQ_CST)
+#define BCAS(ptr, expected, desired) \
+        __atomic_compare_exchange_n(ptr, expected, desired, 0, \
+                __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
+#define VCAS(ptr, expected, desired) \
+        __atomic_compare_exchange_n(ptr, expected, desired, 0, \
+                __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? (*expected) : 0
 
-/* Allocate a single page / 2^order number of pages */
-void* alloc_page();
-void* alloc_pages(const uint32_t order);
+/*
+ * Public APIs
+ */
 
-void free_page(void *addr);
-void free_pages(void *addr, const uint32_t order);
+int  nb_init(uint64_t base_addr, uint64_t size);
+void* nb_alloc(uint64_t size);
+void nb_free(void *addr);
 
-/* START DEBUG ONLY */
-void pmm_klog_buddy(void);
-/* END DEBUG ONLY */
+/*
+ * Private APIs
+ */
 
-#endif /* PHYSICAL_H */
+uint32_t __nb_try_alloc(uint32_t node);
+void __nb_freenode(uint32_t node, uint32_t upper_bound);
+void __nb_unmark(uint32_t node, uint32_t upper_bound);
+
+uint32_t __nb_leftmost(uint32_t node, uint32_t depth);
+void __nb_clean_block(void* addr, uint64_t size);
+
+/*
+ * Statistics
+ */
+
+uint64_t nb_stat_min_size();
+uint32_t nb_stat_max_order();
+
+uint64_t nb_stat_tree_size();
+uint64_t nb_stat_index_size();
+uint32_t nb_stat_depth();
+uint32_t nb_stat_base_level();
+uint64_t nb_stat_max_size();
+uint32_t nb_stat_release_count();
+
+uint64_t nb_stat_total_memory();
+uint64_t nb_stat_used_memory();
+
+uint64_t nb_stat_block_size(uint32_t order);
+uint64_t nb_stat_total_blocks(uint32_t order);
+uint64_t nb_stat_used_blocks(uint32_t order);
+
+uint8_t nb_stat_occupancy_map(uint8_t *buff, uint32_t order);
+
+/*
+ * Helpers
+ */
+static inline uint8_t nb_mark(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val | (OCC_LEFT >> (child % 2))));
+}
+
+static inline uint8_t nb_unmark(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val & ~((OCC_LEFT | COAL_LEFT) >> (child % 2))));
+}
+
+static inline uint8_t nb_set_coal(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val | (COAL_LEFT >> (child % 2))));
+}
+
+static inline uint8_t nb_clean_coal(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val & ~(COAL_LEFT >> (child % 2))));
+}
+
+static inline uint8_t nb_is_coal(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val & (COAL_LEFT >> (child % 2))));
+}
+
+static inline uint8_t nb_is_occ_buddy(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val & (OCC_RIGHT << (child % 2))));
+}
+
+static inline uint8_t nb_is_coal_buddy(uint8_t val, uint32_t child)
+{
+        return ((uint8_t) (val & (COAL_RIGHT << (child % 2))));
+}
+
+static inline uint8_t nb_is_free(uint8_t val)
+{
+        return !(val & BUSY);
+}
+
+static inline uint32_t nb_level(uint32_t node)
+{
+        return LOG2_LOWER(node);
+}
+
+#endif /* NBBS_H */
+
+#ifdef __cplusplus
+}
+#endif

@@ -80,7 +80,6 @@ SRCS = \
 	Kernel/Library/LibKern/Time.c \
 	Kernel/Memory/BootMem.c \
 	Kernel/Memory/Physical.c \
-	Kernel/Memory/NBBS.c \
 	Kernel/Memory/Virtual.c
 OBJS = ${SRCS:.c=.o}
 
@@ -107,9 +106,7 @@ TEST_SRCS = \
 	Kernel/Memory/BootMem.c \
 	Tests/MemoryBootMem.cpp \
 	Kernel/Memory/Physical.c \
-	Tests/MemoryPhysical.cpp \
-	Kernel/Memory/NBBS.c \
-	Tests/MemoryNBBS.cpp
+	Tests/MemoryPhysical.cpp
 TEST_OBJS := ${filter %.o, ${TEST_SRCS:.c=.o}}
 TEST_OBJS += ${filter %.o, ${TEST_SRCS:.cpp=.o}}
 

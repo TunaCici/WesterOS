@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 extern "C" {
@@ -9,116 +10,183 @@ extern "C" {
         #include "Memory/Physical.h"
 }
 
-/* Test using 8 MiB of space (4x 2 MiB blocks) */
+/* Memory arena information:    */
+/* ---------------------------- */
+/* Total memory:         64 MiB */
+/* Min/alloc/page size:   4 KiB */
+/* Max order:                 9 */
+/* Depth/level:              14 */
+/* Base level:                5 */
+/* Max size:              2 MiB */
+/* ---------------------------- */
 
-/* With `new` we might NOT get a 2 MiB aligned addr (e.g. 0x200001)           */
-/* PMM aligns the start addr to 2 MiB. so, i need to account for misalignment */
-/* Allocating one (1) extra block helps solve this issue                      */
-/* But this time, If `new` gives us an aligned addr, PMM inits 5x blocks      */
-/* I want a deterministic results (4x blocks). Substricting one (1) helps it  */
-#define TEST_PM_PLAYGROUND_SIZE 5 * SIZEOF_BLOCK(MAX_ORDER - 1) - 1
+#define NBBS_TOTAL_MEMORY (64 * 1024 * 1024)
+#define NBBS_MIN_SIZE (4 * 1024)
+#define NBBS_MAX_ORDER 9
 
-TEST(MemoryPhysical, __clear_page_area)
+#define NBBS_DEPTH 14
+#define NBBS_BASE_LEVEL 5
+#define NBBS_MAX_SIZE (2 * 1024 * 1024)
+
+/* Runner information */
+/* ---------------------------- */
+/* Threads:                   4 */
+/* ---------------------------- */
+
+#define NBBS_THREADS 4
+
+TEST(MemoryPhysical, __helpers)
 {
-        uint8_t *playground = new uint8_t[PAGE_SIZE];
-        for (auto i = 0; i < PAGE_SIZE; i++) {
-                playground[i] = 42;
-        }
+        uint8_t status = 0;
 
-        __clear_page_area(playground, PAGE_SIZE);
+        status = nb_mark(status, 0);
+        EXPECT_EQ(OCC_LEFT, status);
+        status = nb_unmark(status, 0);
+        EXPECT_EQ(0, status);
 
-        for (auto i = 0; i < PAGE_SIZE; i++) {
-                EXPECT_EQ(playground[i], 0);
-        }
-}
+        status = nb_mark(status, 1);
+        EXPECT_EQ(OCC_RIGHT, status);
+        status = nb_unmark(status, 1);
+        EXPECT_EQ(0, status);
 
-TEST(MemoryPhysical, __budy)
-{
-        list_head_t *addr = 0x0;
+        status = nb_set_coal(status, 0);
+        EXPECT_EQ(COAL_LEFT, status);
+        EXPECT_NE(0, nb_is_coal(status, 0));
+        EXPECT_EQ(0, nb_clean_coal(status, 0));
+        status = 0;
 
-        for (auto i = 0; i < MAX_ORDER; i++) {
-                list_head_t *buddy = __buddy(addr, i);
-                EXPECT_EQ(buddy, (list_head_t*) SIZEOF_BLOCK(i));
-                
-                list_head_t *buddyBuddy = __buddy(buddy, i);
-                EXPECT_EQ(buddyBuddy, addr);
-        }        
+        status = nb_set_coal(status, 1);
+        EXPECT_EQ(COAL_RIGHT, status);
+        EXPECT_NE(0, nb_is_coal(status, 1));
+        EXPECT_EQ(0, nb_clean_coal(status, 1));
+        status = 0;
+
+        status = nb_mark(status, 0);
+        EXPECT_NE(0, nb_is_occ_buddy(status, 1));
+        status = nb_mark(status, 1);
+        EXPECT_NE(0, nb_is_occ_buddy(status, 0));
+
+        status = nb_set_coal(status, 0);
+        EXPECT_NE(0, nb_is_coal_buddy(status, 1));
+        status = nb_set_coal(status, 1);
+        EXPECT_NE(0, nb_is_coal_buddy(status, 0));
+
+        status = 0;
+        EXPECT_NE(0, nb_is_free(status));
+        status |= BUSY;
+        EXPECT_EQ(0, nb_is_free(status));
+
+        EXPECT_EQ(1, EXP2(0));
+        EXPECT_EQ(2, EXP2(1));
+        EXPECT_EQ(1024, EXP2(10));
+
+        EXPECT_EQ(0, LOG2_LOWER(1));
+        EXPECT_EQ(1, LOG2_LOWER(2));
+        EXPECT_EQ(10, LOG2_LOWER(1024));
 }
 
 TEST(MemoryPhysical, init)
 {
-        /* Bootmem is required */
+        /* Bootmem allocator is required */
         uint8_t *bootmem_arena = static_cast<uint8_t*>(
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
         std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
-        
+
         bootmem_init((void*) bootmem_arena);
 
-        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
-        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
+        /* Alloc 1 max_size block, in case the base_addr is not aligned */
+        uint8_t *playground = static_cast<uint8_t*>(
+                std::aligned_alloc(EXP2(NBBS_MAX_ORDER) * NBBS_MIN_SIZE,
+                        NBBS_TOTAL_MEMORY));
+
+        for (auto i = 0; i < NBBS_TOTAL_MEMORY; i++) {
                 playground[i] = 0;
         }
 
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
+        /* Empty base or size NOT allowed */
+        EXPECT_EQ(1, nb_init(0x0, 0));
 
-        /* Less than SIZEOF(MAX_ORDER - 1) is not allowed */
-        uint64_t blockCount = init_allocator(
-                0x0, 
-                (void*) (SIZEOF_BLOCK(MAX_ORDER - 1) - 1)
-        );
-        EXPECT_EQ(blockCount, 0);
+        /* Less than min/alloc/page size is NOT allowed */
+        EXPECT_EQ(1, nb_init((uint64_t) playground, NBBS_MIN_SIZE - 1));
 
-        /* Minimum size allowed (1 block) */
-        blockCount = init_allocator(
-                playground,
-                playground + SIZEOF_BLOCK(MAX_ORDER - 1)
-        );
-        EXPECT_EQ(blockCount, 1);
+        /* Min/alloc/page size allowed */
+        EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_MIN_SIZE));
 
-        /* Ideal size (4 blocks) */
-        blockCount = init_allocator(
-                playground,
-                playground + TEST_PM_PLAYGROUND_SIZE
-        );
-
-        EXPECT_EQ(blockCount, 4); /* 8 MiB divided into 4x 2 MiB blocks */
+        /* Everything we have */
+        EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY));
 }
 
-TEST(MemoryPhysical, __block_to_idx)
-{
-        /* Bootmem is required */
+TEST(MemoryPhysical, nb_alloc)
+{       
+        /* Bootmem allocator is required */
         uint8_t *bootmem_arena = static_cast<uint8_t*>(
                 std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
         std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
 
         bootmem_init((void*) bootmem_arena);
 
-        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
-        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
-                playground[i] = 0;
+        /* initialize */
+        uint8_t *playground = static_cast<uint8_t*>(
+                std::aligned_alloc(NBBS_MAX_SIZE, NBBS_TOTAL_MEMORY)
+        );
+        std::fill_n(playground, NBBS_TOTAL_MEMORY / sizeof(uint8_t), 0);
+
+        EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY));
+
+        std::vector<int*> allocs = {};
+
+        /* Boundry */
+        ASSERT_NE((void*) 0, nb_alloc(0));
+        ASSERT_NE((void*) 0, nb_alloc(NBBS_MIN_SIZE));
+        ASSERT_NE((void*) 0, nb_alloc(NBBS_MAX_SIZE));
+        EXPECT_EQ((void*) 0, nb_alloc(NBBS_MAX_SIZE + 1));
+
+        /* Allocate (on all orders) */
+        for (uint32_t i = 0; i <= NBBS_MAX_ORDER; i++) {
+                int *alloc = 0;
+                uint64_t alloc_size = nb_stat_block_size(i);
+
+                alloc = (int*) nb_alloc(alloc_size);
+                ASSERT_NE((void*) 0, alloc);
+
+                allocs.push_back(alloc);
         }
 
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
+        /* Write */
+        for (size_t i = 0; i < allocs.size(); i++) {
+                int elem_count = nb_stat_block_size(i) / sizeof(int);
 
-        uint64_t blockCount = init_allocator(
-                playground,
-                playground + TEST_PM_PLAYGROUND_SIZE
-        );
-
-        for (auto i = 0; i < blockCount; i++) {
-                uint64_t idx = __block_to_idx(
-                        (list_head_t*) (playground + i * SIZEOF_BLOCK(MAX_ORDER - 1)),
-                        MAX_ORDER - 1
+                EXPECT_EQ(
+                        allocs[i] + elem_count,
+                        std::fill_n(allocs[i], elem_count, i + 1)
                 );
-                EXPECT_EQ(idx, i);
         }
+
+        /* Verify */
+        for (size_t i = 0; i < allocs.size(); i++) {
+                for (uint64_t j = 0 ; j < nb_stat_block_size(i); i += sizeof(int)) {
+                        EXPECT_EQ((int) (i + 1), allocs[i][j]);
+                }
+        }
+
+        /* Allocate rest of the blocks (order 0) */
+        int free_blocks = nb_stat_total_blocks(0);
+
+        for (uint32_t i = 0; i <= NBBS_MAX_ORDER; i++) {
+                int64_t used_blocks = nb_stat_used_blocks(i) * (1 << i);
+                free_blocks -= used_blocks;
+        }
+
+        for (int i = 0; i < free_blocks; i++) {
+                EXPECT_NE((void*) 0, nb_alloc(NBBS_MIN_SIZE));
+        }
+
+        /* No memory left */
+        EXPECT_EQ((void*) 0, nb_alloc(NBBS_MIN_SIZE));
 }
 
-TEST(MemoryPhysical, alloc_page)
+
+TEST(MemoryPhysical, nb_free)
 {
         /* Bootmem is required */
         uint8_t *bootmem_arena = static_cast<uint8_t*>(
@@ -127,234 +195,80 @@ TEST(MemoryPhysical, alloc_page)
 
         bootmem_init((void*) bootmem_arena);
 
-        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
-        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
-                playground[i] = 0;
-        }
-
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
-
-        uint64_t blockCount = init_allocator(
-                playground,
-                playground + TEST_PM_PLAYGROUND_SIZE
+        /* Initialize */
+        uint8_t *playground = static_cast<uint8_t*>(
+                std::aligned_alloc(NBBS_MAX_SIZE, NBBS_TOTAL_MEMORY)
         );
+        std::fill_n(playground, NBBS_TOTAL_MEMORY / sizeof(uint8_t), 0);
 
-        std::vector<uint8_t*> allocs = {};
-        auto pagesCount = blockCount * SIZEOF_BLOCK(MAX_ORDER - 1) / PAGE_SIZE;
-        EXPECT_EQ(pagesCount, 2048); /* 8 MiB == 2048 * PAGE_SIZE */
+        EXPECT_EQ(0, nb_init((uint64_t) playground, NBBS_TOTAL_MEMORY));
 
-        /* Allocate single pages */
-        for (auto i = 0; i < pagesCount; i++) {
-                uint8_t *page = (uint8_t*) alloc_page();
-                EXPECT_EQ(page, playground + i * PAGE_SIZE);
+        std::vector<void*> allocs1 = {};
+        std::vector<void*> allocs2 = {};
 
-                /* Write random value */
-                for (auto j = 0; j < PAGE_SIZE; j++) {
-                        page[j] = j % 256;
+        /* NULL does nothing - shouldn't crash */
+        nb_free((void*) 0);
+
+        /* Try on all orders */
+        for (uint32_t i = 0; i <= NBBS_MAX_ORDER; i++) {
+                uint64_t block_count = nb_stat_total_blocks(i);
+
+                /* Alloc all */
+                for (uint64_t j = 0; j < block_count; j++) {
+                        void *alloc = nb_alloc(nb_stat_block_size(i));
+                
+                        ASSERT_NE((void*) 0, alloc);
+                        allocs1.push_back(alloc);
                 }
 
-                allocs.push_back(page);
-        }
+                /* Verify all allocated */
+                ASSERT_EQ(0, block_count - nb_stat_used_blocks(i));
 
-        /* Read values */
-        for (auto page : allocs) {
-                for (auto i = 0; i < PAGE_SIZE; i++) {
-                        EXPECT_EQ(page[i], i % 256);
-                }
-        }
-
-        /* No available space left at this point */
-        uint8_t *page = (uint8_t*) alloc_page();
-        EXPECT_TRUE(page == nullptr);
-}
-
-TEST(MemoryPhysical, alloc_pages)
-{
-        /* Bootmem is required */
-        uint8_t *bootmem_arena = static_cast<uint8_t*>(
-                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
-        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
-
-        bootmem_init((void*) bootmem_arena);
-
-        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
-        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
-                playground[i] = 0;
-        }
-
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
-
-        uint64_t blockCount = init_allocator(
-                playground,
-                playground + TEST_PM_PLAYGROUND_SIZE
-        );
-
-        /* Any alloc outside the range [0 ... MAX_ORDER) is not allowed */
-        uint8_t *block = (uint8_t*) alloc_pages(MAX_ORDER);
-        EXPECT_TRUE(block == nullptr);
-
-        /* Alloc 2 of each order (2 is just an arbitrary number) */
-        std::vector<uint8_t*> allocs = {};
-
-        for (auto i = MAX_ORDER - 1; 0 <= i; i--) {
-                uint8_t *block1 = (uint8_t*) alloc_pages(i);
-                uint8_t *block2 = (uint8_t*) alloc_pages(i);
-
-                EXPECT_TRUE(block1 != nullptr);
-                EXPECT_TRUE(block2 != nullptr);
-
-                /* Write random value */
-                for (auto j = 0; j < SIZEOF_BLOCK(i); j++) {
-                        block1[j] = j % 256;
-                        block2[j] = j % 256;
-                }
-
-                allocs.push_back(block1);
-                allocs.push_back(block2);
-        }
-
-        /* Read values */
-        auto readOrder = MAX_ORDER - 1;
-        auto toggle = 1;
-        for (auto block : allocs) {
-                for (auto i = 0; i < SIZEOF_BLOCK(readOrder); i++) {
-                        EXPECT_EQ(block[i], i % 256);
-                }
-
-                /* Skip to next 'readOrder' after 2 consecutive blocks */
-                toggle++;
-                if (toggle % 3 == 0) {
-                        toggle = 1;
-                        readOrder--;
-                }
-        }
-}
-
-TEST(MemoryPhysical, free_page)
-{
-        /* Bootmem is required */
-        uint8_t *bootmem_arena = static_cast<uint8_t*>(
-                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
-        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
-
-        bootmem_init((void*) bootmem_arena);
-
-        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
-        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
-                playground[i] = 0;
-        }
-
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
-
-        uint64_t blockCount = init_allocator(
-                playground,
-                playground + TEST_PM_PLAYGROUND_SIZE
-        );
-
-        std::vector<uint8_t*> allocs1 = {};
-        std::vector<uint8_t*> allocs2 = {};
-
-        auto pagesCount = blockCount * SIZEOF_BLOCK(MAX_ORDER - 1) / PAGE_SIZE;
-        EXPECT_EQ(pagesCount, 2048); /* 8 MiB == 2048 * PAGE_SIZE */
-
-        /* Allocate single pages */
-        for (auto i = 0; i < pagesCount; i++) {
-                uint8_t *page = (uint8_t*) alloc_page();
-                EXPECT_EQ(page, playground + i * PAGE_SIZE);
-
-                /* Write random value */
-                for (auto j = 0; j < PAGE_SIZE; j++) {
-                        page[j] = j % 256;
-                }
-
-                allocs1.push_back(page);
-        }
-
-        /* Free them */
-        for (auto page : allocs1) {
-                free_page(page);
-        }
-
-        /* Allocate again */
-        for (auto i = 0; i < pagesCount; i++) {
-                uint8_t *page = (uint8_t*) alloc_page();
-                EXPECT_EQ(page, playground + i * PAGE_SIZE);
-
-                /* Write random value */
-                for (auto j = 0; j < PAGE_SIZE; j++) {
-                        page[j] = j % 256;
-                }
-
-                allocs2.push_back(page);
-        }
-
-        /* Should be the same addresses */
-        for (auto i = 0; i < pagesCount; i++) {
-                EXPECT_EQ(allocs1[i], allocs2[i]);
-        }
-}
-
-TEST(MemoryPhysical, free_pages)
-{
-        /* Bootmem is required */
-        uint8_t *bootmem_arena = static_cast<uint8_t*>(
-                std::aligned_alloc(PAGE_SIZE, BM_ARENA_SIZE_BYTE));
-        std::fill_n(bootmem_arena, BM_ARENA_SIZE_BYTE, 0x0);
-
-        bootmem_init((void*) bootmem_arena);
-
-        uint8_t *playground = new uint8_t[TEST_PM_PLAYGROUND_SIZE];
-        for (auto i = 0; i < TEST_PM_PLAYGROUND_SIZE; i++) {
-                playground[i] = 0;
-        }
-
-        /* Align to MAX_ORDER - 1 block size (as internal functions do so) */
-        playground = (uint8_t*) CUSTOM_ALIGN(playground,
-               SIZEOF_BLOCK(MAX_ORDER - 1));
-
-        uint64_t blockCount = init_allocator(
-                playground,
-                playground + TEST_PM_PLAYGROUND_SIZE
-        );
-
-        std::vector<uint8_t*> allocs = {};
-
-        auto pagesCount = blockCount * SIZEOF_BLOCK(MAX_ORDER - 1) / PAGE_SIZE;
-        EXPECT_EQ(pagesCount, 2048); /* 8 MiB == 2048 * PAGE_SIZE */
-
-        auto currBlockCount = blockCount;
-        for (auto i = MAX_ORDER - 1; 0 <= i; i--) {
-                /* Allocate all on current order */
-                for (auto j = 0; j < currBlockCount; j++) {
-                        uint8_t *block = (uint8_t*) alloc_pages(i);
-                        EXPECT_TRUE(block != nullptr);
-
-                        allocs.push_back(block);
-                }
-
-                /* Free them all */
-                for (auto block : allocs) {
-                        free_pages(block, i);
+                /* Free all */
+                for (auto alloc : allocs1) {
+                        nb_free(alloc);
                 }
                 
-                /* Should be able to allocate them, again */
-                for (auto j = 0; j < currBlockCount; j++) {
-                        uint8_t *block = (uint8_t*) alloc_pages(i);
-                        EXPECT_TRUE(block != nullptr);
+                /* Verify all freed */
+                ASSERT_EQ(0, nb_stat_used_blocks(i));
+
+                /* Alloc all again */
+                for (uint64_t j = 0; j < block_count; j++) {
+                        void *alloc = nb_alloc(nb_stat_block_size(i));
+                
+                        ASSERT_NE((void*) 0, alloc);
+                        allocs2.push_back(alloc);
                 }
 
-                /* Free them again for the next iter */
-                for (auto block : allocs) {
-                        free_pages(block, i);
+                /* Same allocs should happen */
+                ASSERT_EQ(allocs1, allocs2);
+
+                /* Clean */
+                for (auto alloc : allocs1) {
+                        nb_free(alloc);
                 }
 
-                currBlockCount *= 2;
-                allocs.clear();
+                allocs1.clear();
+                allocs2.clear();
         }
+
+        /* Coalescing */
+        // This alloc is going to prevent others to coalesce
+        void *guard = nb_alloc(nb_stat_block_size(NBBS_MIN_SIZE));
+        ASSERT_NE((void*) 0, guard);
+
+        /* Alloc rest of the blocks on max_order */
+        // We decrement by 1 because the first one is occuiped by 'guard'
+        for (uint32_t i = 0; i < nb_stat_total_blocks(NBBS_MAX_ORDER)-1; i++) {
+                ASSERT_NE((void*) 0, nb_alloc(NBBS_MAX_SIZE));
+        }
+
+        /* Can't alloc due to 'guard' occupying higher blocks */
+        ASSERT_EQ((void*) 0x0, nb_alloc(NBBS_MAX_SIZE));
+
+        /* Free and cause coalesing */
+        nb_free(guard);
+
+        /* Can alloc */
+        ASSERT_NE((void*) 0, nb_alloc(NBBS_MAX_SIZE));
 }
