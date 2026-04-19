@@ -25,17 +25,21 @@ _start:
 	ldr     x2, =_shim_end
 	mov     x3, #0x00
 
-	/* Enable access to FPU & Advanced SIMD (NEON) */
+	/* Enable access to NEON & FP */
+	// No trap to all NEON & FP instructions
 	mrs	x0, CPACR_EL1
-	orr	x0, x0, #(0x3 << 20)
+	orr	x0, x0, #(0b11 << 20)
 	msr	CPACR_EL1, x0
 	isb
+
 1:
+	/* Others sleep */
 	cmp     x1, x2
 	b.gt    2f
 	str     x3, [x1]
 	add     x1, x1, #0x08
 	b.lt     1b
 2:
+	/* One core works */
 	bl      start
 	b .

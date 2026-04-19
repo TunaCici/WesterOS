@@ -291,8 +291,9 @@ void start(void)
         uint32_t arch = 0;
         uint32_t val32 = 0;
         uint64_t val64 = 0;
-        char buff[64] = {0};
 
+        char buff[64] __attribute__((aligned(16))) = {0};
+        
         /* Hard-coded device/board info */
         /* TODO: Replace this with a DTB parser */
         const char      *_cpuModel  = "Cortex A-72";
