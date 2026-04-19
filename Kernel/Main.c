@@ -31,7 +31,7 @@
  *      dtb: Device Tree Blob base address
  *      dtb_size: Device Tree Blob size in bytes
  */
-void kmain(boot_sysinfo* boot_params)
+void kmain(boot_sysinfo *boot_params)
 {
         volatile void *important_ahh = &boot_params;
 

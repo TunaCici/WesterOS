@@ -52,10 +52,11 @@ static void* _find_node(fdt_header *hdr, const char* name)
 
         void *result = 0;
 
-        uint32_t *token = (uint8_t*) hdr + TO_LE(hdr->off_dt_struct);
+        uint32_t *token = (uint32_t*) (
+                (uint8_t*) hdr + TO_LE(hdr->off_dt_struct));
 
         for (uint32_t i = 0; i < TO_LE(hdr->totalsize) / 4; i++) {
-                if (TO_LE(*token) == FDT_BEGIN_NODE && _match(token + 1, name)) {
+                if (TO_LE(*token) == FDT_BEGIN_NODE && _match((const char*)(token + 1u), name)) {
                         result = token;
                         break;
                 }
