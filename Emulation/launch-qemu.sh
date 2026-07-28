@@ -70,6 +70,6 @@ MAIN_DRV=""
 # Launch the machine
 set -x
 
-${QEMU_BIN} ${NAME} ${MACHINE} ${CPU} ${SMP} ${ACCELERATOR} ${MEMORY} \
+qemu-mcp -- ${QEMU_BIN} ${NAME} ${MACHINE} ${CPU} ${SMP} ${ACCELERATOR} ${MEMORY} \
     ${EFI_FLASH_DRV} ${EFI_VARS_DRV} ${INPUT_DEV} ${NETWORK_DEV} ${STORAGE_DEV} ${DISPLAY_DEV} ${SOUND_DEV} ${MISC_DEV} \
     ${CD_DRV} ${MAIN_DRV} $*
